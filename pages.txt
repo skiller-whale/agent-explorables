@@ -1,0 +1,6 @@
+# Every page the site serves, one path per line, relative to the repo root.
+# tools/smoke.mjs loads each one. Add a page here when you add it to the site.
+index.html
+sketches/posttooluse.html
+modules/specs-and-plans/plan-mode.html
+modules/specs-and-plans/openspec.html

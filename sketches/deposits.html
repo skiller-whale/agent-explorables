@@ -1,0 +1,276 @@
+<title>Spec-Driven Explorable Sketch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+/* Layout: a fixed 1280x720 stage scaled to the window (screenshare size). Act track on top; Claude Code pane left; repo (tree + open file) right. Dark only. */
+:root{
+  --bg:#0e1014; --panel:#161a21; --panel2:#1c212a; --line:#2a303b; --text:#e4e7ec; --muted:#8a93a3; --dim:#5b6372;
+  --claude:#d97757; --coach:#c9a2ff; --ok:#7ee0a1; --mod:#ffb86b; --bad:#ff7b7b; --q:#f0c674;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace; --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font:15px/1.4 var(--sans);overflow:hidden}
+#fit{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{width:1280px;height:720px;flex:none;position:relative;transform-origin:center center;display:grid;grid-template-rows:44px 1fr 40px;gap:10px;padding:12px}
+
+#acts{display:flex;gap:18px;align-items:center}
+.act{display:flex;align-items:center;gap:8px;color:var(--dim);font-size:13px}
+.act b{font-weight:600}
+.act.now{color:var(--text)}
+.dots{display:flex;gap:5px}
+.dot{width:9px;height:9px;border-radius:2px;transform:rotate(45deg);background:var(--line);cursor:pointer}
+.dot.done{background:var(--muted)}
+.dot.now{background:var(--text);box-shadow:0 0 0 3px #ffffff22}
+.sep{width:24px;height:1px;background:var(--line)}
+
+#main{display:grid;grid-template-columns:700px 1fr;gap:12px;min-height:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-height:0;position:relative}
+.label{font:600 11px var(--sans);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+#cc{display:grid;grid-template-rows:1fr auto auto;overflow:hidden}
+#cc.closed #term{opacity:.35}
+#term{padding:14px 16px;font:13px/1.5 var(--mono);overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;transition:opacity .4s}
+.ln{white-space:pre-wrap}
+.ln.user{color:var(--text);background:#ffffff0d;border-radius:4px;padding:3px 8px}
+.ln.user::before{content:"> ";color:var(--dim)}
+.ln.tool{color:var(--muted)}
+.ln.tool::before{content:"● ";color:var(--ok)}
+.ln.tool.spin::before{content:"◌ ";color:var(--claude)}
+.ln.say::before{content:"⏺ ";color:var(--text)}
+.ln.q{color:var(--q)}
+.ln.box{border:1px solid var(--line);border-radius:6px;padding:8px 10px;color:var(--text)}
+.ln.box .h{color:var(--claude);font-weight:600}
+.ln.diff{border-left:2px solid var(--line);padding-left:10px;color:var(--muted)}
+.ln.diff .add{color:var(--ok)}.ln.diff .del{color:var(--bad)}
+.ln.ok{color:var(--ok)}
+.ln.sys{color:var(--dim);font-style:italic}
+mark{background:#f0c67433;color:inherit;border-radius:2px;padding:0 2px}
+#input{margin:0 12px;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font:13px/1.45 var(--mono);min-height:38px;display:flex;flex-direction:column;gap:6px}
+#input .typed::after{content:"▍";color:var(--muted);animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.opt{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;background:#c9a2ff14;border:1px solid #c9a2ff55;color:var(--text);border-radius:6px;padding:7px 10px;font:13px/1.45 var(--mono);cursor:pointer}
+.opt:hover,.opt:focus-visible{border-color:var(--coach);outline:none;background:#c9a2ff26}
+.opt .k{color:var(--coach);font-weight:700;flex:none}
+.opt.last{border-color:var(--coach)}
+.opt.last .k::after{content:" · last time";font-weight:400;color:var(--muted)}
+#modeline{padding:4px 14px 8px;font:12px var(--mono);color:var(--muted);display:flex;justify-content:space-between}
+#modeline .plan{color:#5fd7d7}
+
+#repo{display:grid;grid-template-rows:auto 1fr;gap:10px;padding:12px;overflow:hidden}
+#tree{font:13px/1.6 var(--mono)}
+.f{display:flex;gap:8px;align-items:center;padding:0 6px;border-radius:4px;transition:background .3s,color .3s}
+.f.dir{color:var(--muted)}
+.f.new{color:var(--ok)}.f.mod{color:var(--mod)}
+.f.flash{background:#ffffff1a}
+.f.file{cursor:pointer}
+.f.file:hover{background:#ffffff0d}
+.f.openf{background:#ffffff12;box-shadow:inset 2px 0 0 var(--text)}
+#viewer{border:1px solid var(--line);border-radius:6px;background:var(--panel2);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+#viewer .vh{font:12px var(--mono);color:var(--muted);padding:6px 10px;border-bottom:1px solid var(--line)}
+#viewer pre{margin:0;padding:8px 10px;font:12px/1.5 var(--mono);white-space:pre-wrap;overflow:auto;flex:1}
+#viewer:empty{display:none}
+
+
+
+#nav{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+#nav button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font:inherit;cursor:pointer}
+#nav button:disabled{opacity:.35;cursor:default}
+#nav .title{color:var(--text);font-weight:600}
+#nav .grow{flex:1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="fit"><div id="stage">
+  <div id="acts"></div>
+  <div id="main">
+    <section class="panel" id="cc">
+      <div id="term"></div>
+      <div id="input"></div>
+      <div id="modeline"><span id="mode"></span></div>
+    </section>
+    <section class="panel" id="repo">
+      <div><div class="label" style="margin-bottom:6px">Repo</div><div id="tree"></div></div>
+      <div id="viewer"></div>
+    </section>
+  </div>
+  <div id="nav"><button id="back" title="Back (←)">←</button><button id="next" title="Next (→)">→</button><span class="title" id="stitle"></span><span class="grow"></span><span id="hint"></span></div>
+</div></div>
+
+<script>
+// ---------- content ----------
+// Repo snapshots: v0 at the start, v1 after the weekend deposits, v2 after the free month (from spec-driven-lab/fixtures/members).
+const FILES = {
+"v0": {
+"bookings.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\nfrom guests import Guest\n\n\n@dataclass\nclass Booking:\n    guest: Guest\n    start: datetime\n    party_size: int\n\n\ndef book(guest, start, party_size):\n    guest.visits += 1\n    return Booking(guest, start, party_size)",
+"guests.py": "from dataclasses import dataclass\nfrom datetime import date\n\n\n@dataclass\nclass Guest:\n    name: str\n    email: str\n    visits: int = 0\n    member_until: date | None = None\n\n    def is_member(self, on):\n        return self.member_until is not None and on <= self.member_until",
+"payments.py": "# Stand-in for the card payment provider.\ncharges = []\n\n\ndef charge(guest, amount):\n    charges.append((guest.email, amount))",
+"tests/test_bookings.py": "from datetime import date, datetime\n\nfrom bookings import book\nfrom guests import Guest\n\n\ndef test_book_returns_a_booking():\n    guest = Guest(\"Ana\", \"ana@example.com\")\n    booking = book(guest, datetime(2026, 5, 13, 19, 0), 2)\n    assert booking.party_size == 2\n\n\ndef test_membership_lasts_until_its_end_date():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 6, 30))\n    assert guest.is_member(date(2026, 6, 30))\n    assert not guest.is_member(date(2026, 7, 1))",
+"README.md": "# Bookings\n\nOnline table bookings for the restaurant. Members of the supper club have a `member_until` date on their guest record.\n\nRun the tests with `python -m pytest`."
+},
+"v1": {
+"bookings.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\nimport payments\nfrom guests import Guest\n\nDEPOSIT_PER_HEAD = 10\nFRIDAY, SATURDAY = 4, 5\n\n\n@dataclass\nclass Booking:\n    guest: Guest\n    start: datetime\n    party_size: int\n    deposit: int = 0\n\n\ndef requires_deposit(guest, booking):\n    if booking.start.weekday() not in (FRIDAY, SATURDAY):\n        return False\n    # Members are exempt\n    if guest.is_member(booking.start.date()):\n        return False\n    return True\n\n\ndef book(guest, start, party_size):\n    guest.visits += 1\n    booking = Booking(guest, start, party_size)\n    if requires_deposit(guest, booking):\n        booking.deposit = DEPOSIT_PER_HEAD * party_size\n        payments.charge(guest, booking.deposit)\n    return booking",
+"guests.py": "from dataclasses import dataclass\nfrom datetime import date\n\n\n@dataclass\nclass Guest:\n    name: str\n    email: str\n    visits: int = 0\n    member_until: date | None = None\n\n    def is_member(self, on):\n        return self.member_until is not None and on <= self.member_until",
+"payments.py": "# Stand-in for the card payment provider.\ncharges = []\n\n\ndef charge(guest, amount):\n    charges.append((guest.email, amount))",
+"tests/test_bookings.py": "from datetime import date, datetime\n\nimport payments\nfrom bookings import book\nfrom guests import Guest\n\nWEDNESDAY_7PM = datetime(2026, 5, 13, 19, 0)\nFRIDAY_7PM = datetime(2026, 5, 15, 19, 0)\n\n\ndef setup_function():\n    payments.charges.clear()\n\n\ndef test_book_returns_a_booking():\n    guest = Guest(\"Ana\", \"ana@example.com\")\n    booking = book(guest, WEDNESDAY_7PM, 2)\n    assert booking.party_size == 2\n\n\ndef test_membership_lasts_until_its_end_date():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 6, 30))\n    assert guest.is_member(date(2026, 6, 30))\n    assert not guest.is_member(date(2026, 7, 1))\n\n\ndef test_no_deposit_midweek():\n    booking = book(Guest(\"Ana\", \"ana@example.com\"), WEDNESDAY_7PM, 3)\n    assert booking.deposit == 0\n    assert payments.charges == []\n\n\ndef test_friday_booking_pays_a_deposit_per_head():\n    booking = book(Guest(\"Ana\", \"ana@example.com\"), FRIDAY_7PM, 3)\n    assert booking.deposit == 30\n    assert payments.charges == [(\"ana@example.com\", 30)]\n\n\ndef test_member_pays_no_deposit():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 12, 31))\n    booking = book(guest, FRIDAY_7PM, 4)\n    assert booking.deposit == 0\n    assert payments.charges == []",
+"README.md": "# Bookings\n\nOnline table bookings for the restaurant. Members of the supper club have a `member_until` date on their guest record.\n\nRun the tests with `python -m pytest`."
+},
+"v2": {
+"bookings.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\nimport payments\nfrom guests import Guest\n\nDEPOSIT_PER_HEAD = 10\nFRIDAY, SATURDAY = 4, 5\n\n\n@dataclass\nclass Booking:\n    guest: Guest\n    start: datetime\n    party_size: int\n    deposit: int = 0\n\n\ndef requires_deposit(guest, booking):\n    if booking.start.weekday() not in (FRIDAY, SATURDAY):\n        return False\n    # Members are exempt\n    if guest.is_member(booking.start.date()):\n        return False\n    return True\n\n\ndef book(guest, start, party_size):\n    if guest.visits == 0:\n        guest.grant_free_month(start.date())\n    guest.visits += 1\n    booking = Booking(guest, start, party_size)\n    if requires_deposit(guest, booking):\n        booking.deposit = DEPOSIT_PER_HEAD * party_size\n        payments.charge(guest, booking.deposit)\n    return booking",
+"guests.py": "import calendar\nfrom dataclasses import dataclass\nfrom datetime import date\n\n\n@dataclass\nclass Guest:\n    name: str\n    email: str\n    visits: int = 0\n    member_until: date | None = None\n\n    def is_member(self, on):\n        return self.member_until is not None and on <= self.member_until\n\n    def grant_free_month(self, start):\n        year, month = (start.year + 1, 1) if start.month == 12 else (start.year, start.month + 1)\n        day = min(start.day, calendar.monthrange(year, month)[1])\n        end = date(year, month, day)\n        if self.member_until is None or self.member_until < end:\n            self.member_until = end",
+"payments.py": "# Stand-in for the card payment provider.\ncharges = []\n\n\ndef charge(guest, amount):\n    charges.append((guest.email, amount))",
+"tests/test_bookings.py": "from datetime import date, datetime\n\nimport payments\nfrom bookings import book\nfrom guests import Guest\n\nWEDNESDAY_7PM = datetime(2026, 5, 13, 19, 0)\nFRIDAY_7PM = datetime(2026, 5, 15, 19, 0)\n\n\ndef setup_function():\n    payments.charges.clear()\n\n\ndef test_book_returns_a_booking():\n    guest = Guest(\"Ana\", \"ana@example.com\")\n    booking = book(guest, WEDNESDAY_7PM, 2)\n    assert booking.party_size == 2\n\n\ndef test_membership_lasts_until_its_end_date():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 6, 30))\n    assert guest.is_member(date(2026, 6, 30))\n    assert not guest.is_member(date(2026, 7, 1))\n\n\ndef test_no_deposit_midweek():\n    booking = book(Guest(\"Ana\", \"ana@example.com\"), WEDNESDAY_7PM, 3)\n    assert booking.deposit == 0\n    assert payments.charges == []\n\n\ndef test_friday_booking_pays_a_deposit_per_head():\n    booking = book(Guest(\"Ana\", \"ana@example.com\", visits=1), FRIDAY_7PM, 3)\n    assert booking.deposit == 30\n    assert payments.charges == [(\"ana@example.com\", 30)]\n\n\ndef test_member_pays_no_deposit():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 12, 31))\n    booking = book(guest, FRIDAY_7PM, 4)\n    assert booking.deposit == 0\n    assert payments.charges == []\n\n\ndef test_first_booking_grants_a_free_month():\n    guest = Guest(\"Cy\", \"cy@example.com\")\n    book(guest, WEDNESDAY_7PM, 2)\n    assert guest.member_until == date(2026, 6, 13)\n\n\ndef test_second_booking_does_not_extend_the_month():\n    guest = Guest(\"Cy\", \"cy@example.com\")\n    book(guest, WEDNESDAY_7PM, 2)\n    book(guest, datetime(2026, 5, 20, 19, 0), 2)\n    assert guest.member_until == date(2026, 6, 13)\n\n\ndef test_free_month_is_clamped_to_the_end_of_a_short_month():\n    guest = Guest(\"Cy\", \"cy@example.com\")\n    book(guest, datetime(2026, 1, 31, 19, 0), 2)\n    assert guest.member_until == date(2026, 2, 28)\n\n\ndef test_existing_longer_membership_is_kept():\n    guest = Guest(\"Bo\", \"bo@example.com\", member_until=date(2026, 12, 31))\n    book(guest, WEDNESDAY_7PM, 2)\n    assert guest.member_until == date(2026, 12, 31)",
+"README.md": "# Bookings\n\nOnline table bookings for the restaurant. Members of the supper club have a `member_until` date on their guest record.\n\nRun the tests with `python -m pytest`."
+}
+};
+const TREE = ['bookings.py','guests.py','payments.py','tests/','  test_bookings.py','README.md'];
+
+const P1 = "Charge a deposit of £10 per head on every Friday and Saturday booking. Members don't have to pay it.";
+const P3 = "Give every new customer a free month's membership when they make their first booking.";
+
+// A turn waits for the user. Picking an option plays Claude's whole response, up to the next time it needs the user.
+// scene: the coach presses → to start this turn (a new act).
+const TURNS = [
+// Act 1
+{act:0,title:'The request',before:[{reset:'v0'},{mode:'plan'}],
+ options:[{k:'Send',send:P1,ops:[{tool:'Read(bookings.py)',file:'bookings.py',show:true},{tool:'Read(guests.py)',file:'guests.py'},{tool:'Read(payments.py)',file:'payments.py'},
+  {box:`<span class="h">Plan: weekend deposits</span>
+1. Add requires_deposit(guest, booking) in bookings.py.
+   Friday and Saturday bookings pay £10 per head, except
+   for members on the booking date.
+2. Charge it in book() through payments.charge.
+3. Tests: Friday pays, midweek doesn't, a member doesn't.
+
+Ready to build?`}]}]},
+{act:0,title:'Approve',
+ options:[{k:'1. Yes, start building',ops:[{mode:'normal'},{tool:'Update(bookings.py)',file:'bookings.py',to:'v1',show:true},
+  {diff:`<span class="add">+def requires_deposit(guest, booking):</span>
+<span class="add">+    if booking.start.weekday() not in (FRIDAY, SATURDAY):</span>
+<span class="add">+        return False</span>
+<span class="add">+    # Members are exempt</span>
+<span class="add">+    if guest.is_member(booking.start.date()):</span>
+<span class="add">+        return False</span>
+<span class="add">+    return True</span>`},{tool:'Update(tests/test_bookings.py)',file:'tests/test_bookings.py',to:'v1'},{tool:'Bash(python -m pytest)'},{line:'5 passed',cls:'ok'},{line:'Done. Weekend bookings take a £10-per-head deposit, and members are exempt.',cls:'say'}]}]},
+
+// Act 2
+{act:1,title:'The request',scene:true,before:[{reset:'v1'},{mode:'plan'}],
+ options:[{k:'Send',send:P3,ops:[{tool:'Read(bookings.py)',file:'bookings.py',show:true},{tool:'Read(guests.py)',file:'guests.py'},{tool:'Read(tests/test_bookings.py)',file:'tests/test_bookings.py'},
+  {box:`<span class="h">Plan: a free month for new customers</span>
+1. guests.py: add grant_free_month(start), which sets
+   member_until one calendar month after start.
+2. bookings.py: in book(), call it on a guest's first
+   booking (visits == 0), so the first booking is covered.
+3. Tests: the grant and its end date, a second booking,
+   month-end clamping. Update the Friday deposit test to
+   use a returning guest.
+
+Do you want me to go ahead?`}]}]},
+{act:1,title:'Approve',
+ options:[{k:'1. Yes, start building',ops:[{mode:'normal'},{tool:'Update(guests.py)',file:'guests.py',to:'v2'},{tool:'Update(bookings.py)',file:'bookings.py',to:'v2',show:true},
+  {diff:`     def book(guest, start, party_size):
+<span class="add">+    if guest.visits == 0:</span>
+<span class="add">+        guest.grant_free_month(start.date())</span>
+         guest.visits += 1`},{tool:'Update(tests/test_bookings.py)',file:'tests/test_bookings.py',to:'v2'},{tool:'Bash(python -m pytest)'},{line:'9 passed',cls:'ok'},{line:'Done. New customers get a free month of membership on their first booking.',cls:'say'}]}]},
+];
+const ACTS=['Plan mode','Five months later'];
+
+// ---------- engine ----------
+const $=s=>document.querySelector(s);
+const term=$('#term'),input=$('#input'),tree=$('#tree'),viewer=$('#viewer');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait=(ms,fast)=>fast||reduce?Promise.resolve():new Promise(r=>setTimeout(r,ms));
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+let path={};      // turn -> option indices picked, in order (the most recent path)
+let at=0, cur=[], phase='idle', run=0; // phase: waiting | responding | done
+let contents={}, marks={}, openPath=null, scripted=null; // scripted: the file the script last showed
+
+function renderTree(){
+  const dirs=[];
+  tree.innerHTML=TREE.map(f=>{const name=f.trimStart();const ind=(f.length-name.length)/2;dirs.length=ind;
+    const isDir=name.endsWith('/');const p=dirs.join('')+name;if(isDir)dirs[ind]=name;
+    return `<div class="f ${isDir?'dir':'file'} ${marks[p]||''} ${p===openPath?'openf':''}" data-path="${p}" style="padding-left:${6+ind*12}px">${name}</div>`}).join('');
+  tree.querySelectorAll('.f.file').forEach(e=>e.onclick=()=>openFile(e.dataset.path));  // a coach's pick, until the script moves on
+}
+function openFile(p){if(contents[p]===undefined)return;openPath=p;
+  viewer.innerHTML=`<div class="vh">${p}</div><pre></pre>`;viewer.querySelector('pre').textContent=contents[p];renderTree()}
+function flash(p){const el=tree.querySelector(`[data-path="${p}"]`);if(el){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),500)}}
+function trim(){while(term.scrollHeight>term.clientHeight&&term.children.length>1)term.removeChild(term.firstChild)}
+function addLine(html,cls){const d=document.createElement('div');d.className='ln '+(cls||'');d.innerHTML=html;term.appendChild(d);trim();return d}
+async function stream(el,html,fast,r){
+  if(fast||reduce){el.innerHTML=html;trim();return}
+  const parts=html.split(/(<[^>]+>)/);let out='';
+  for(const p of parts){if(p.startsWith('<')){out+=p;continue}
+    for(let i=0;i<p.length;i+=5){if(r!==run)return;el.innerHTML=out+p.slice(0,i+5);trim();await wait(10)}
+    out+=p}
+  el.innerHTML=html;trim();
+}
+async function op(o,fast,r){
+  if(o.reset){term.innerHTML='';contents={...FILES[o.reset]};marks={};$('#cc').classList.remove('closed');
+    if(scripted)openFile(scripted);else{viewer.innerHTML=''}renderTree()}
+  if(o.mode)$('#mode').innerHTML=o.mode==='plan'?'<span class="plan">⏸ plan mode on</span> (shift+tab to cycle)':'? for shortcuts';
+  if(o.tool){const d=addLine(esc(o.tool),'tool spin');if(o.file)flash(o.file);await wait(400,fast);if(r!==run)return;d.classList.remove('spin');
+    if(o.to){contents[o.file]=FILES[o.to][o.file];marks[o.file]='mod';renderTree()}
+    if(o.show){scripted=o.file;openFile(o.file)}else if(o.file===openPath)openFile(o.file)}
+  if(o.line!==undefined){const d=addLine('',o.cls);await stream(d,esc(o.line),fast,r)}
+  if(o.box){const d=addLine('','box');await stream(d,o.box,fast,r)}
+  if(o.diff){const d=addLine('','diff');await stream(d,o.diff,fast,r)}
+  if(!fast)await wait(120);
+}
+function backToScript(){if(scripted&&openPath!==scripted)openFile(scripted)}
+async function ops(list,fast,r){for(const o of list||[]){if(r!==run)return;await op(o,fast,r)}}
+
+function showOptions(){
+  input.innerHTML='';const t=TURNS[at];
+  const nextMem=(path[at]||[])[cur.length];
+  t.options.forEach((o,j)=>{const b=document.createElement('button');b.className='opt'+(nextMem===j?' last':'');
+    b.innerHTML=`<span class="k">${o.k}</span>${o.send?`<span>${esc(o.send)}</span>`:''}`;b.onclick=()=>pick(j);input.appendChild(b)});
+}
+// One option: the user's message, then Claude's response through to the next point it needs the user.
+async function play(j,fast,r){
+  const o=TURNS[at].options[j];
+  if(!fast){input.innerHTML='<span class="typed"></span>';
+    if(o.send){const ty=input.firstChild;for(let c=0;c<o.send.length;c+=3){if(r!==run)return;ty.textContent=o.send.slice(0,c+3);await wait(12)}await wait(200)}}
+  input.innerHTML='<span class="typed"></span>';
+  if(o.send)addLine(esc(o.send),'user');else addLine(esc(o.k),'sys');
+  await ops(o.ops,fast,r);
+}
+async function pick(j){
+  if(phase!=='waiting')return;
+  const mem=path[at]||[];
+  if(mem[cur.length]!==j){path[at]=cur.concat(j);for(const k in path)if(+k>at)delete path[k]}
+  cur.push(j);phase='responding';backToScript();updateNav();
+  const r=++run;await play(j,false,r);if(r!==run)return;
+  if(at+1<TURNS.length&&!TURNS[at+1].scene){at++;cur=[];await enter(false,r)}
+  else{phase='done';input.innerHTML='<span class="typed"></span>';updateNav()}
+}
+async function enter(fast,r){
+  await ops(TURNS[at].before,fast,r);if(r!==run)return;
+  phase='waiting';showOptions();updateNav();
+}
+async function go(i){ // jump to the start of turn i, replaying the most recent path before it
+  const r=++run;term.innerHTML='';marks={};scripted=null;openPath=null;viewer.innerHTML='';
+  for(let k=0;k<i;k++){at=k;cur=[];await ops(TURNS[k].before,true,r);for(const j of (path[k]||[0]))await play(j,true,r)}
+  at=i;cur=[];await enter(true,r);
+}
+function next(){
+  if(phase==='waiting'){const m=(path[at]||[])[cur.length];if(m!==undefined)pick(m);return}
+  if(phase==='done'&&at+1<TURNS.length){backToScript();at++;cur=[];enter(false,++run)}
+}
+function back(){if(phase==='responding'||cur.length)return go(at);go(Math.max(0,at-1))}
+function updateNav(){
+  const t=TURNS[at];
+  $('#back').disabled=at===0&&!cur.length;
+  $('#next').disabled=(phase==='done'&&at===TURNS.length-1)||phase==='responding'||(phase==='waiting'&&(path[at]||[])[cur.length]===undefined);
+  $('#stitle').textContent=`${ACTS[t.act]} · ${t.title}`;
+  $('#hint').textContent={waiting:(path[at]||[])[cur.length]!==undefined?'Pick a message, or → to send last time\'s':'Pick a message to send',responding:'Claude is working…',done:at===TURNS.length-1?'End':'→ next act'}[phase]||'';
+  $('#acts').innerHTML=ACTS.map((a,ai)=>{const idx=TURNS.map((s,i)=>[s,i]).filter(([s])=>s.act===ai);
+    return (ai?'<span class="sep"></span>':'')+`<span class="act ${t.act===ai?'now':''}"><b>${a}</b><span class="dots">${idx.map(([s,i])=>`<span class="dot ${i<at?'done':''} ${i===at?'now':''}" data-i="${i}" title="${s.title}"></span>`).join('')}</span></span>`}).join('');
+  document.querySelectorAll('.dot').forEach(d=>d.onclick=()=>go(+d.dataset.i));
+}
+$('#next').onclick=next;$('#back').onclick=back;
+addEventListener('keydown',e=>{if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')back();
+  if(/^[1-9]$/.test(e.key)){const b=input.querySelectorAll('.opt')[+e.key-1];if(b)b.click()}});
+function fit(){const s=Math.min(innerWidth/1280,innerHeight/720);$('#stage').style.transform=`scale(${s})`}
+addEventListener('resize',fit);
+fit();go(0);
+</script>

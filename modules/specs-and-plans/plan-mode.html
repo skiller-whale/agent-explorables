@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec-Driven Development explainer: Plan mode</title>
+<link rel="stylesheet" href="conversation.css">
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <h1>Spec-Driven Development explainer: Plan mode</h1>
+    <div id="acts"></div>
+    <a class="next-link" href="openspec.html">Next: OpenSpec →</a>
+  </header>
+  <div id="main" class="three">
+    <section class="panel" id="cc" aria-label="Claude Code">
+      <div id="term" aria-live="polite"></div>
+      <div id="input"></div>
+      <div id="mode"></div>
+      <div id="callout" hidden></div>
+    </section>
+    <section class="panel" id="files" aria-label="Repository">
+      <div class="label">Repo</div><div id="tree"></div>
+    </section>
+    <section class="panel" id="file" aria-label="File"><div id="viewer"></div></section>
+  </div>
+  <nav>
+    <button id="back" title="Back (←)" aria-label="Back">←</button>
+    <button id="next" title="Next (→)" aria-label="Next">→</button>
+    <span id="where"></span>
+  </nav>
+</div></div>
+<script type="module" src="plan-mode.js"></script>
+</body>
+</html>

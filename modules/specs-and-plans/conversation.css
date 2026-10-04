@@ -1,0 +1,146 @@
+/* A canned Claude Code conversation beside its repo. A fixed 1280x720 stage scaled to the window
+   (screenshare size): a header with the title, act track and next link; the Claude Code pane left;
+   the repo tree and file viewer right; back/forward below. Dark only. */
+:root {
+  --bg: #0e1014; --panel: #161a21; --panel2: #1c212a; --line: #2a303b;
+  --text: #e4e7ec; --muted: #8a93a3; --dim: #5b6372;
+  --claude: #d97757; --coach: #c9a2ff; --ok: #7ee0a1; --mod: #ffb86b; --q: #f0c674; --plan: #5fd7d7;
+  --hl: #f0c6741c; --hl-edge: #f0c674;
+  --callout: #fff6dc; --callout-ink: #1d1a12; --focus: #7cc4ff;
+  --syn-k: #c9a2ff; --syn-s: #a5d6a7; --syn-c: #6f7887; --syn-n: #ffb86b; --syn-f: #7cc4ff; --syn-d: #f0c674; --syn-h: #e4e7ec;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 var(--sans); overflow: hidden; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+#fit { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+#stage { width: 1280px; height: 720px; flex: none; position: relative; transform-origin: center center;
+         display: grid; grid-template-rows: 44px 1fr 40px; gap: 10px; padding: 12px; }
+
+/* header */
+header { display: flex; align-items: center; gap: 28px; }
+h1 { margin: 0; font: 600 16px var(--sans); white-space: nowrap; }
+h1 span { color: var(--muted); font-weight: 400; }
+#acts { display: flex; gap: 18px; align-items: center; flex: 1; }
+.act { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
+.act + .act::before { content: ""; width: 24px; height: 1px; background: var(--line); margin-right: 10px; }
+.act b { font-weight: 600; }
+.act.now { color: var(--text); }
+.dots { display: flex; gap: 6px; }
+.dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 2px; transform: rotate(45deg); background: var(--line); cursor: pointer; }
+.dot.done { background: var(--muted); }
+.dot:disabled { cursor: default; }
+.dot.now { background: var(--text); box-shadow: 0 0 0 3px #ffffff22; }
+.next-link { color: var(--muted); text-decoration: none; font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; white-space: nowrap; }
+.next-link:hover { color: var(--text); border-color: var(--muted); }
+
+#main { display: grid; grid-template-columns: 700px 1fr; gap: 12px; min-height: 0; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-height: 0; position: relative; }
+.label { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+/* Claude Code pane */
+#cc { display: grid; grid-template-rows: 1fr auto auto; overflow: hidden; }
+#term { padding: 14px 16px; font: 13px/1.5 var(--mono); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; }
+.ln { white-space: pre-wrap; }
+.ln.user { background: #ffffff0d; border-radius: 4px; padding: 3px 8px; }
+.ln.user::before { content: "> "; color: var(--dim); }
+.ln.tool { color: var(--muted); }
+.ln.tool::before { content: "● "; color: var(--ok); }
+.ln.tool.spin::before { content: "◌ "; color: var(--claude); }
+.ln.say::before { content: "⏺ "; }
+.ln.box { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.ln.box .h { color: var(--claude); font-weight: 600; }
+.ln.diff { border-left: 2px solid var(--line); padding-left: 10px; color: var(--muted); }
+.ln.diff .add { color: var(--ok); }
+.ln.ok { color: var(--ok); }
+.ln.sys { color: var(--dim); font-style: italic; }
+#input { margin: 0 12px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; font: 13px/1.45 var(--mono); min-height: 38px; display: flex; flex-direction: column; gap: 6px; }
+#input .typed::after { content: "▍"; color: var(--muted); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.opt { display: flex; gap: 10px; align-items: flex-start; text-align: left; width: 100%; background: #c9a2ff14; border: 1px solid #c9a2ff55; border-radius: 6px; padding: 7px 10px; font: 13px/1.45 var(--mono); cursor: pointer; }
+.opt:hover { border-color: var(--coach); background: #c9a2ff26; }
+.opt .k { color: var(--coach); font-weight: 700; flex: none; }
+/* Continue moves to the next act: yellow, so it reads as different from a message to Claude. */
+.opt.continue { background: #f0c67414; border-color: #f0c67466; }
+.opt.continue:hover { background: #f0c67426; border-color: var(--q); }
+.opt.continue .k { color: var(--q); }
+/* Restart: small and to the right, so it isn't hit by accident */
+.opt.restart { width: auto; align-self: flex-end; background: none; border-color: var(--line); color: var(--muted); padding: 4px 12px; }
+.opt.restart:hover { border-color: var(--muted); background: #ffffff0d; }
+.opt.restart .k { color: var(--muted); font-weight: 600; }
+#mode { padding: 4px 14px 8px; font: 12px var(--mono); min-height: 26px; }
+#mode .plan { color: var(--plan); }
+
+/* callout: a note for the coach and learners, over the conversation */
+#callout { position: absolute; left: 50%; transform: translateX(-50%); width: max-content; max-width: 420px;
+           background: var(--callout); color: var(--callout-ink); border-radius: 8px; padding: 12px 16px;
+           font-size: 16px; line-height: 1.45; box-shadow: 0 8px 24px #0008; z-index: 5; text-align: center; }
+#callout.center { top: 40%; }
+#callout.top { top: 18px; }
+/* side: against the repo pane, pointing at the file it explains */
+#callout.side { left: auto; right: 18px; transform: none; top: 30%; max-width: 360px; text-align: left; }
+#callout.side::after { content: ""; position: absolute; right: -9px; top: 22px; border: 9px solid transparent; border-right: 0; border-left-color: var(--callout); }
+#callout code { font: 14px var(--mono); background: #0000000f; padding: 0 3px; border-radius: 3px; }
+
+/* repo */
+#repo { display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; overflow: hidden; }
+#repo .label { margin-bottom: 6px; }
+#tree { font: 13px/1.38 var(--mono); display: flex; flex-direction: column; }
+.f { display: flex; justify-content: space-between; align-items: center; padding: 0 6px; border-radius: 4px; transition: background .3s; text-align: left; background: none; border: 0; }
+.f.dir { color: var(--muted); }
+.f.file { cursor: pointer; }
+.f.file:hover { background: #ffffff0d; }
+.f.flash { background: #ffffff1a; }
+.f.open { background: #ffffff12; box-shadow: inset 2px 0 0 var(--text); }
+.f .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ic { width: 13px; height: 13px; flex: none; }
+.ic.dir { fill: var(--dim); }
+.ic.file { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-linejoin: round; }
+.ic.file.py { stroke: var(--syn-f); }
+.ic.file.md { stroke: var(--syn-s); }
+.f .mark { color: var(--mod); font-size: 11px; font-weight: 700; }
+.f .mark.new { color: var(--ok); }
+#viewer { border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+#viewer:empty { display: none; }
+#viewer .vh { font: 12px var(--mono); color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); }
+#viewer pre { margin: 0; padding: 8px 0; font: 12px/1.5 var(--mono); overflow: auto; flex: 1; scroll-behavior: smooth; }
+#viewer .line { display: block; padding: 0 10px; white-space: pre-wrap; border-left: 2px solid transparent; }
+#viewer .line.hl { background: var(--hl); border-left-color: var(--hl-edge); }
+.t-k { color: var(--syn-k); } .t-s { color: var(--syn-s); } .t-c { color: var(--syn-c); font-style: italic; }
+.t-n { color: var(--syn-n); } .t-fn { color: var(--syn-f); } .t-d { color: var(--syn-d); } .t-h { color: var(--syn-h); font-weight: 600; }
+
+/* three columns: the conversation, the file list, the file */
+#main.three { grid-template-columns: 480px 310px 1fr; }
+#files { padding: 12px 8px; overflow: hidden; --indent: 11px; }
+#files .label { margin: 0 6px 6px; }
+#files #tree { font-size: 12px; line-height: 1.6; }
+#files .f .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+#files .f .nm .ic { vertical-align: -2px; margin-right: 6px; }
+#file { display: flex; overflow: hidden; }
+#file #viewer { border: 0; flex: 1; background: none; }
+#file .vh { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; }
+#main.three #callout.side { max-width: 320px; }
+
+/* nav */
+nav { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+nav button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; cursor: pointer; }
+nav button:disabled { opacity: .35; cursor: default; }
+#where { color: var(--text); font-weight: 600; }
+
+/* workflow tracker, at the top of the conversation: interlocking chevrons, one per stage.
+   Under way is filled, done is green, to come is dim. */
+#cc:has(#stages) { grid-template-rows: auto 1fr auto auto; }
+#stages { display: flex; padding: 10px 12px 6px; position: relative; z-index: 1; background: var(--panel); border-radius: 8px 8px 0 0; }
+#stages .stage { flex: 1; height: 24px; display: flex; align-items: center; justify-content: center;
+                 font: 600 12px var(--sans); color: var(--dim); background: var(--panel2);
+                 clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%, 9px 50%);
+                 margin-left: -6px; padding-left: 6px; }
+#stages .stage:first-child { margin-left: 0; padding-left: 0; clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 50%, calc(100% - 9px) 100%, 0 100%); }
+#stages .stage.done { color: var(--ok); background: #7ee0a124; }
+#stages .stage.now { color: var(--bg); background: var(--plan); }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

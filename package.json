@@ -1,0 +1,17 @@
+{
+  "name": "agent-explorables",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test",
+    "smoke": "node tools/smoke.mjs",
+    "shot": "node tools/shot.mjs",
+    "verify": "npm run typecheck && npm test && npm run smoke"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.6.0"
+  }
+}

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PostToolUse sketch</title>
+<style>
+  :root {
+    --bg: #0e1014; --panel: #161a21; --line: #2a303b; --text: #e4e7ec; --muted: #8a93a3;
+    --harness: #7cc4ff; --model: #c9a2ff; --tool: #7ee0a1; --hook: #ffb86b; --user: #e4e7ec;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, sans-serif;
+         height: 100vh; display: grid; grid-template-columns: 200px 210px 1fr 280px; gap: 12px; padding: 12px; }
+  code, .mono { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; min-height: 0; }
+  h2 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+
+  /* steps */
+  #steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+  #steps li { counter-increment: s; padding: 5px 8px 5px 30px; font-size: 14px; border-radius: 6px; position: relative; cursor: pointer; color: var(--muted); }
+  #steps li::before { content: counter(s); position: absolute; left: 6px; top: 5px; width: 16px; text-align: right; font-variant-numeric: tabular-nums; }
+  #steps li.done { color: var(--text); }
+  #steps li.now { background: #222936; color: var(--text); font-weight: 600; box-shadow: inset 3px 0 0 var(--harness); }
+  .nav { margin-top: 12px; display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+  button { background: #222936; color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; font: inherit; cursor: pointer; }
+  button:disabled { opacity: .35; cursor: default; }
+
+  /* harness states */
+  #track { list-style: none; margin: 0; padding: 0; position: relative; }
+  #track::before { content: ""; position: absolute; left: 9px; top: 12px; bottom: 12px; width: 2px; background: var(--line); }
+  #track li { position: relative; padding: 6px 6px 6px 28px; margin-bottom: 4px; color: var(--muted); border-radius: 6px; }
+  #track li::before { content: ""; position: absolute; left: 4px; top: 11px; width: 10px; height: 10px; border-radius: 50%;
+                      background: var(--bg); border: 2px solid var(--line); }
+  #track li.event::before { border-radius: 2px; transform: rotate(45deg); }
+  #track li.event { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  #track li.past { color: var(--text); }
+  #track li.past::before { background: var(--line); }
+  #track li.now { color: var(--text); font-weight: 600; background: #1f2a38; }
+  #track li.now::before { background: var(--harness); border-color: var(--harness); }
+  .legend { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+  /* stage */
+  .stage { display: flex; align-items: center; justify-content: center; min-height: 0; min-width: 0; }
+  .stage svg { width: 100%; max-width: 450px; max-height: 100%; display: block; }
+  .node rect { fill: #1c212a; stroke: var(--line); stroke-width: 1.5; transition: stroke .2s, opacity .2s; }
+  .node text { fill: var(--text); font-size: 16px; font-weight: 600; }
+  .node .sub { fill: var(--muted); font-size: 12px; font-weight: 400; font-family: ui-monospace, Menlo, monospace; }
+  .node .state { fill: var(--harness); font-size: 19px; font-weight: 700; font-family: ui-monospace, Menlo, monospace; }
+  .node .statelabel { fill: var(--muted); font-size: 11px; font-weight: 400; letter-spacing: .08em; }
+  .node.on rect { stroke: var(--c); stroke-width: 3; }
+  .node.off { opacity: .45; }
+  .wire { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .arrow { stroke: var(--c, var(--text)); stroke-width: 2.5; fill: none; marker-end: url(#head); stroke-dasharray: 6 5; animation: flow .6s linear infinite; }
+  .arrowlabel { fill: var(--text); font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  @keyframes flow { to { stroke-dashoffset: -11; } }
+
+  /* hooks list: a HUD pinned to the stage's top right */
+  .rightcol { display: grid; grid-template-rows: auto 1fr; gap: 12px; min-height: 0; }
+  .hud { font: 13px ui-monospace, Menlo, monospace; transition: border-color .2s, opacity .2s; }
+  .hud h2 { font-family: system-ui, sans-serif; }
+  #hooklist.off { opacity: .55; }
+  #hooklist.on { border-color: var(--harness); box-shadow: 0 0 0 1px var(--harness); }
+  .hl-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; padding: 4px 6px; border: 1px solid transparent; border-radius: 5px; }
+  .hl-entry { flex-basis: 100%; padding-left: 12px; color: var(--hook); }
+  .hl-empty { color: var(--muted); padding: 0 6px; }
+  .hl-row .hl-empty { padding: 0; }
+  .hl-row.look { background: #1f2a38; border-color: var(--harness); }
+  .hl-row.hit { background: #2b2418; border-color: var(--hook); }
+
+  .hl-row.unset .hl-entry { display: none; }
+  .hl-row.unset::after { content: "[ ]"; color: var(--muted); }
+  #callout .hint { margin-top: 8px; color: #5a6070; font-size: 14px; }
+  #steps li.unnumbered { counter-increment: none; }
+  #steps li.unnumbered::before { content: ""; }
+
+  /* context */
+  #ctx { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+  .msg { border-left: 3px solid var(--c); padding: 4px 8px; background: #1c212a; border-radius: 0 6px 6px 0; }
+  .msg .who { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .msg.new { outline: 1px dashed var(--c); }
+
+  /* callout */
+  .focus { outline: 2px solid var(--harness); outline-offset: 3px; }
+  #callout { position: fixed; width: 260px; background: #f4f1e8; color: #16181d; border-radius: 8px; padding: 10px 12px;
+             font-size: 16px; line-height: 1.35; box-shadow: 0 6px 24px #0008; z-index: 5; transition: left .25s, top .25s; }
+  #callout.wide { width: 350px; }
+  #callout pre { margin: 8px 0 0; padding: 8px 10px; background: #16181d; color: #e4e7ec; border-radius: 6px;
+                 font: 12px/1.35 ui-monospace, Menlo, monospace; }
+  #callout pre .add { color: #7ee0a1; background: #1a2e22; display: inline-block; width: 100%; }
+  #callout pre .del { color: #ff9a9a; background: #321c1f; display: inline-block; width: 100%; }
+  #callout .prompt { margin-top: 8px; padding: 8px 10px; background: #16181d; color: #e4e7ec; border-radius: 6px; }
+  #callout .reply { margin-top: 8px; padding: 8px 10px; background: #16181d; color: #e4e7ec; border-radius: 6px; border-left: 3px solid var(--model); }
+  #callout code { font: 14px ui-monospace, Menlo, monospace; background: #e2ddd0; padding: 1px 4px; border-radius: 4px; }
+  #callout .reply code { background: #2a303b; }
+  #steps code { font-size: 13px; }
+  #callout .reply + pre { margin-top: 4px; }
+  #callout .prompt::before { content: "> "; color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  #callout::before { content: ""; position: absolute; width: 12px; height: 12px; background: inherit; transform: rotate(45deg); }
+  #callout[data-at=below]::before { top: -6px; left: var(--tip); }
+  #callout[data-at=above]::before { bottom: -6px; left: var(--tip); }
+  #callout[data-at=left]::before { right: -6px; top: var(--tip); }
+  #callout[data-at=right]::before { left: -6px; top: var(--tip); }
+  @media (prefers-reduced-motion: reduce) { .arrow { animation: none; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<aside class="panel">
+  <h2>PostToolUse</h2>
+  <ol id="steps"></ol>
+  <div class="nav">
+    <button id="prev">◀ Back</button><button id="next">Next ▶</button>
+  </div>
+  <p class="nav">← → to step</p>
+</aside>
+
+<aside class="panel">
+  <h2>Harness state</h2>
+  <ol id="track"></ol>
+  <p class="legend">● state &nbsp; ◆ hook event</p>
+</aside>
+
+<main class="stage">
+  <svg viewBox="0 0 440 440" aria-label="Diagram of the user, harness, model, tool and hook script">
+    <defs>
+      <marker id="head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="context-stroke" />
+      </marker>
+    </defs>
+    <path class="wire" d="M290,60 L290,130 M220,290 L220,370 M360,290 L360,370 M100,400 L155,400" />
+    <path class="wire" d="M90,62 L192,62 L192,130 M120,210 L165,210" />
+    <g class="node" id="n-settings" style="--c:var(--hook)"><rect x="0" y="185" width="120" height="50" rx="8"/><text x="60" y="215" text-anchor="middle" style="font-family:ui-monospace,Menlo,monospace;font-size:14px">settings.json</text></g>
+    <g class="node" id="n-user" style="--c:var(--user)"><rect x="0" y="40" width="90" height="60" rx="8"/><text x="45" y="76" text-anchor="middle">You</text></g>
+    <g class="node" id="n-model" style="--c:var(--model)"><rect x="215" y="0" width="150" height="60" rx="8"/><text x="290" y="27" text-anchor="middle">Model</text><text class="sub" x="290" y="46" text-anchor="middle"></text></g>
+    <g class="node" id="n-harness" style="--c:var(--harness)">
+      <rect x="165" y="130" width="265" height="160" rx="8"/>
+      <text x="290" y="158" text-anchor="middle">Harness</text>
+      <text class="statelabel" x="290" y="196" text-anchor="middle">STATE</text>
+      <text class="state" id="harness-state" x="290" y="224" text-anchor="middle"></text>
+      <text class="sub" id="harness-sub" x="290" y="266" text-anchor="middle"></text>
+    </g>
+    <g class="node" id="n-fs" style="--c:var(--tool)"><rect x="0" y="370" width="100" height="60" rx="8"/><text x="50" y="396" text-anchor="middle" style="font-size:14px">Filesystem</text><text class="sub" x="50" y="416" text-anchor="middle">api.js</text></g>
+    <g class="node" id="n-tool" style="--c:var(--tool)"><rect x="155" y="370" width="130" height="60" rx="8"/><text x="220" y="396" text-anchor="middle">Edit tool</text><text class="sub" x="220" y="416" text-anchor="middle"></text></g>
+    <g class="node" id="n-hook" style="--c:var(--hook)"><rect x="295" y="370" width="130" height="60" rx="8"/><text x="360" y="396" text-anchor="middle">eslint</text><text class="sub" x="360" y="416" text-anchor="middle"></text></g>
+    <g id="arrows"></g>
+  </svg>
+</main>
+
+<div class="rightcol">
+  <section class="panel hud" id="hooklist">
+    <h2>Registered hooks</h2>
+    <div class="hl-row" id="hr-UserPromptSubmit"><span>UserPromptSubmit</span><span class="hl-empty">[ ]</span></div>
+    <div class="hl-row" id="hr-PreToolUse"><span>PreToolUse</span><span class="hl-empty">[ ]</span></div>
+    <div class="hl-row" id="hr-PostToolUse" data-added="1"><span>PostToolUse</span><span class="hl-entry">Edit|Write → eslint</span></div>
+    <div class="hl-row" id="hr-Stop"><span>Stop</span><span class="hl-empty">[ ]</span></div>
+    <div class="hl-empty">…</div>
+  </section>
+  <aside class="panel" style="display:grid;grid-template-rows:auto 1fr;">
+    <h2>Context (what the model sees)</h2>
+    <div id="ctx"></div>
+  </aside>
+</div>
+
+<div id="callout" role="status"></div>
+<script type="module">
+// The harness's path through this scenario. Events are where hooks can fire.
+const TRACK = [
+  { name: 'Starting up' },
+  { name: 'Waiting for prompt' },
+  { name: 'UserPromptSubmit', event: true },
+  { name: 'Waiting for model' },
+  { name: 'PreToolUse', event: true },
+  { name: 'Running tool' },
+  { name: 'PostToolUse', event: true },
+  { name: 'Waiting for model' },
+];
+
+const CTX = [
+  { who: 'user', c: 'var(--user)', text: 'Add a retry to <code>fetchUser</code> in <code>api.js</code>.' },
+  { who: 'assistant', c: 'var(--model)', text: 'I’ll wrap the fetch in a retry loop.<br><code>tool_use: Edit api.js</code>' },
+  { who: 'tool result', c: 'var(--tool)', text: '<code>api.js updated</code>' },
+  { who: 'hook feedback', c: 'var(--hook)', text: '<code>PostToolUse:Edit hook: api.js 14:9 \'res\' is assigned a value but never used</code>' },
+  { who: 'assistant', c: 'var(--model)', text: 'The linter says <code>res</code> is unused. I’ll remove it.<br><code>tool_use: Edit api.js</code>' },
+];
+
+// Each step: where the harness is, what's lit, which arrows run, what's in the context,
+// and what the learner should be looking at (focus: [selector, side for the callout]).
+const STEPS = [
+  { title: 'What this shows', intro: true, at: -1, on: [], arrows: [], ctx: 0, focus: ['#n-harness', 'below'],
+    caption: 'This page steps through what happens when a `PostToolUse` hook runs.',
+    hint: 'Press → or Next to start.' },
+  { title: 'Harness starts, loads hooks', caption: 'Claude Code starts and reads `settings.json`. It finds one hook: run `eslint` after any `Edit` or `Write`.',
+    at: 0, on: ['settings', 'harness'], look: 'PostToolUse', hit: true, arrows: [['M120,210 L165,210', 'hooks', 'var(--hook)', 'above']],
+    ctx: 0, sub: { harness: 'reading settings' }, focus: ['#n-settings', 'below'], dx: -25,
+    code: `{"hooks": {"PostToolUse": [{
+  "matcher": "Edit|Write",
+  "hooks": [{
+    "type": "command",
+    "command": "npx eslint . >&2 || exit 2"
+  }]
+}]}}` },
+  { title: 'Prompt sent', caption: 'You type a prompt, and the harness receives it. It checks for `UserPromptSubmit` hooks. There aren’t any.', prompt: 'Add a retry to fetchUser in api.js.',
+    at: 2, on: ['user', 'harness'], look: 'UserPromptSubmit', arrows: [['M90,62 L192,62 L192,130', 'prompt', 'var(--user)', '', [140, 54]]],
+    ctx: 1, focus: ['#n-user', 'below'] },
+  { title: 'Harness forwards to model', caption: 'The harness sends the context to the model and waits for a reply.',
+    at: 3, on: ['harness', 'model'], arrows: [['M280,130 L280,60', 'context', 'var(--harness)', 'left']],
+    ctx: 1, focus: ['#n-model', 'left'] },
+  { title: 'Model asks for a tool', caption: 'The model can’t edit files itself. It replies with a `tool_use` block asking the harness to run `Edit`.',
+    at: 3, on: ['harness', 'model'], arrows: [['M300,60 L300,130', 'tool_use', 'var(--model)', 'right']],
+    ctx: 2, sub: { model: 'reasoning…' }, focus: ['#n-model', 'left'],
+    reply: 'I’ll wrap the fetch in a retry loop.',
+    code: `tool_use: Edit
+  file_path:  "api.js"
+  old_string: "return (await fetch(…"
+  new_string: "const res = await …"` },
+  { title: 'Harness enters `PreToolUse`', caption: 'Before running `Edit`, the harness checks for `PreToolUse` hooks. There aren’t any, so it carries on.',
+    at: 4, on: ['harness'], look: 'PreToolUse', arrows: [], ctx: 2, sub: { harness: 'no hooks: carry on' }, focus: ['#hr-PreToolUse', 'left'] },
+  { title: 'Harness runs the tool', caption: 'The harness runs `Edit`, which writes this change to `api.js`:',
+    at: 5, on: ['harness', 'tool', 'fs'], arrows: [['M210,290 L210,370', 'run', 'var(--harness)', 'left'], ['M230,370 L230,290', 'result', 'var(--tool)', 'right'], ['M155,400 L100,400', 'write', 'var(--tool)', 'above']],
+    ctx: 3, sub: { tool: 'edits api.js' }, focus: ['#n-tool', 'right'],
+    diff: ` async function fetchUser(id) {
+-  return (await fetch(url(id))).json();
++  const res = await fetch(url(id));
++  return withRetry(() => fetch(url(id)))
++    .then((r) => r.json());
+ }` },
+  { title: 'Harness enters `PostToolUse`', caption: '`Edit` has finished, so the harness moves to `PostToolUse`.',
+    at: 6, on: ['harness'], arrows: [], ctx: 3, focus: ['#track li.now', 'right'] },
+  { title: 'Look up hook, check matcher, run it', caption: 'The `PostToolUse` hook’s matcher is `Edit|Write`. The tool was `Edit`, so it matches. The harness runs the command and sends it the tool call as JSON on `stdin`.',
+    at: 6, on: ['harness', 'hook'], look: 'PostToolUse', hit: true, arrows: [['M350,290 L350,370', 'stdin: JSON', 'var(--harness)', 'left']],
+    ctx: 3, sub: { hook: 'running…', harness: 'running hooks' }, focus: ['#hr-PostToolUse', 'left'] },
+  { title: 'Harness handles the result', caption: '`eslint` finds a problem, so the command exits with code 2. The harness adds the command’s `stderr` to the context.',
+    at: 6, on: ['harness', 'hook'], arrows: [['M370,370 L370,290', 'exit 2 + stderr', 'var(--hook)', 'left']],
+    ctx: 4, sub: { hook: 'exit 2', harness: 'adding feedback' }, focus: ['.msg.new', 'left'] },
+  { title: 'Harness sends the context back', caption: 'The harness sends the context to the model, with the result of `Edit`. The `eslint` error goes too, because the command exited with code 2. If it had exited with code 0, the model would only see the tool result.',
+    at: 7, on: ['harness', 'model'], arrows: [['M280,130 L280,60', 'context', 'var(--harness)', 'left']],
+    ctx: 4, sub: { model: 'reading…' }, focus: ['#n-model', 'left'] },
+  { title: 'Model continues', caption: 'The model reads the `eslint` error and fixes the problem.',
+    at: 7, on: ['harness', 'model'], arrows: [['M300,60 L300,130', 'tool_use', 'var(--model)', 'right']],
+    ctx: 5, sub: { model: 'fixes it' }, focus: ['#n-model', 'left'],
+    reply: 'The linter says `res` is unused. I’ll remove it.',
+    code: `tool_use: Edit
+  file_path:  "api.js"
+  old_string: "const res = await …"
+  new_string: ""` },
+];
+
+const $ = (s) => document.querySelector(s);
+// Escape, then turn `backticks` into inline code.
+const md = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/`([^`]+)`/g, '<code>$1</code>');
+const stepsEl = $('#steps');
+STEPS.forEach((s, i) => {
+  const li = document.createElement('li');
+  li.innerHTML = md(s.title);
+  if (s.intro) li.className = 'unnumbered';
+  li.onclick = () => go(i);
+  stepsEl.append(li);
+});
+
+let cur = 0;
+function go(i) {
+  cur = Math.max(0, Math.min(STEPS.length - 1, i));
+  const s = STEPS[cur];
+  [...stepsEl.children].forEach((li, j) => li.className = (STEPS[j].intro ? 'unnumbered ' : '') + (j === cur ? 'now' : j < cur ? 'done' : ''));
+  $('#prev').disabled = cur === 0;
+  $('#next').disabled = cur === STEPS.length - 1;
+  history.replaceState(null, '', '#' + cur);
+
+  $('#track').innerHTML = TRACK.map((t, j) => `<li class="${t.event ? 'event' : ''} ${j === s.at ? 'now' : j < s.at ? 'past' : ''}">${t.name}</li>`).join('');
+
+  $('#hooklist').classList.toggle('on', !!s.look);
+  $('#hooklist').classList.toggle('off', !s.look);
+  for (const row of document.querySelectorAll('.hl-row')) {
+    const ev = row.id.slice(3);
+    row.classList.toggle('look', s.look === ev && !s.hit);
+    row.classList.toggle('hit', s.look === ev && !!s.hit);
+    row.classList.toggle('unset', !!row.dataset.added && cur < +row.dataset.added);
+  }
+
+  $('#harness-state').textContent = TRACK[s.at]?.name ?? '—';
+  for (const n of ['settings', 'user', 'harness', 'model', 'tool', 'fs', 'hook']) {
+    const g = $('#n-' + n);
+    g.classList.toggle('on', s.on.includes(n));
+    g.classList.toggle('off', !s.on.includes(n));
+    const sub = n === 'harness' ? $('#harness-sub') : g.querySelector('.sub');
+    if (sub && n !== 'fs') sub.textContent = s.sub?.[n] ?? '';
+  }
+
+  $('#arrows').innerHTML = s.arrows.map(([d, label, c, side, pos]) => {
+    const [x1, y1, x2, y2] = d.match(/-?[\d.]+/g).map(Number);
+    const vertical = x1 === x2;
+    let lx = vertical ? x1 + (side === 'left' ? -8 : 8) : (x1 + x2) / 2;
+    let ly = vertical ? (y1 + y2) / 2 + 4 : side === 'below' ? y1 + 16 : y1 - 7;
+    const anchor = pos ? 'middle' : !vertical ? 'middle' : side === 'left' ? 'end' : 'start';
+    if (pos) [lx, ly] = pos;
+    return `<path class="arrow" style="--c:${c}" d="${d}"/><text class="arrowlabel" x="${lx}" y="${ly}" text-anchor="${anchor}">${label}</text>`;
+  }).join('');
+
+  $('#ctx').innerHTML = CTX.slice(0, s.ctx).map((m, j) =>
+    `<div class="msg ${j >= (STEPS[cur - 1]?.ctx ?? 0) ? 'new' : ''}" style="--c:${m.c}"><div class="who">${m.who}</div>${m.text}</div>`).join('');
+
+  place(s);
+}
+
+// Put the explanation next to whatever the learner should be looking at.
+function place(s) {
+  document.querySelectorAll('.focus').forEach((el) => el.classList.remove('focus'));
+  const [sel, at] = s.focus;
+  const target = document.querySelector(sel);
+  if (!(target instanceof SVGElement)) target.classList.add('focus');
+  const c = $('#callout');
+  c.innerHTML = md(s.caption);
+  if (s.reply) {
+    const q = document.createElement('div');
+    q.className = 'reply';
+    q.innerHTML = md(s.reply);
+    c.append(q);
+  }
+  if (s.prompt) {
+    const q = document.createElement('div');
+    q.className = 'prompt';
+    q.textContent = s.prompt;
+    c.append(q);
+  }
+  if (s.diff) {
+    const pre = document.createElement('pre');
+    pre.innerHTML = s.diff.split('\n').map((l) => {
+      const esc = l.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      return l[0] === '+' ? `<span class="add">${esc}</span>` : l[0] === '-' ? `<span class="del">${esc}</span>` : esc;
+    }).join('\n');
+    c.append(pre);
+  }
+  if (s.code) {
+    const pre = document.createElement('pre');
+    pre.textContent = s.code;
+    c.append(pre);
+  }
+  if (s.hint) {
+    const h = document.createElement('div');
+    h.className = 'hint';
+    h.textContent = s.hint;
+    c.append(h);
+  }
+  c.classList.toggle('wide', !!(s.code || s.diff || s.intro));
+  c.dataset.at = at;
+  const r = target.getBoundingClientRect(), w = c.offsetWidth, h = c.offsetHeight, gap = 14;
+  let x = at === 'left' ? r.left - w - gap : at === 'right' ? r.right + gap : r.left + r.width / 2 - w / 2;
+  let y = at === 'above' ? r.top - h - gap : at === 'below' ? r.bottom + gap : r.top + r.height / 2 - h / 2;
+  x = Math.max(8, Math.min(innerWidth - w - 8, x + (s.dx ?? 0)));
+  y = Math.max(8, Math.min(innerHeight - h - 8, y));
+  const side = at === 'left' || at === 'right';
+  const tip = side ? r.top + r.height / 2 - y : r.left + r.width / 2 - x;
+  c.style.setProperty('--tip', Math.max(10, Math.min((side ? h : w) - 22, tip - 6)) + 'px');
+  c.style.left = x + 'px';
+  c.style.top = y + 'px';
+}
+
+$('#prev').onclick = () => go(cur - 1);
+$('#next').onclick = () => go(cur + 1);
+addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(cur + 1);
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') go(cur - 1);
+});
+addEventListener('resize', () => place(STEPS[cur]));
+go(parseInt(location.hash.slice(1)) || 0);
+</script>
+</body>
+</html>
