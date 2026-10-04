@@ -1,5 +1,5 @@
 # Publishes the repo root, as it stands, to GitHub Pages. There is no build step.
-# Inert until the repository exists on GitHub with Pages set to "GitHub Actions".
+# origin's main is the filtered copy that tools/publish.sh pushes, not local main.
 name: pages
 on:
   push:
