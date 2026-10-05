@@ -204,7 +204,7 @@ const stop = (act, title, file, html, option, focus) => ({
 /** @type {Script} */
 const script = {
   acts: ["OpenSpec", "Five months later"],
-  stages: ["Explore", "Propose", "Apply", "Archive"],
+  stages: ["Explore", "Propose", "Apply", "Sync", "Archive"],
   collapse: ["openspec/changes/archive/"],
   files,
   turns: [
@@ -288,17 +288,18 @@ I'd go with A, because a booking only records one guest.` },
     {
       act: 0,
       title: "Sync",
-      callout: { html: "Syncing copies the change's requirements into the project's main specs. They describe how the whole system behaves now, and they're where the agent looks before the next change. The rest of the change goes into the archive.", place: "side" },
+      callout: { html: "<p>Archiving does two things.</p><p>First it <b>syncs</b>. Syncing copies the change's requirements into the project's main specs. They describe how the whole system behaves now, and they're where the agent looks before the next change.</p><p>Then it <b>archives</b>. The rest of the change goes into the archive.</p>", place: "side" },
       options: [{
         label: "Send",
         send: "Yes.",
         ops: [
           { tool: `Write(${DEPOSIT_SPEC})` },
+          { stage: 4 },
           { tool: `Bash(mv ${C1} ${A1})` },
           { repo: "a1" },
           { view: DEPOSIT_SPEC, focus: "## Requirements" },
           { line: "Synced and archived.", cls: "say" },
-          { stage: 4 },
+          { stage: 5 },
         ],
       }],
     },
@@ -399,11 +400,12 @@ stays correct as written.` }],
         send: "Yes.",
         ops: [
           { tool: `Write(${MEMBERSHIP_SPEC})` },
+          { stage: 4 },
           { tool: `Bash(mv ${C2} ${A2})` },
           { repo: "a2" },
           { view: MEMBERSHIP_SPEC },
           { line: "Synced and archived.", cls: "say" },
-          { stage: 4 },
+          { stage: 5 },
         ],
       }],
     },

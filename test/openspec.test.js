@@ -7,7 +7,7 @@ import { launchChrome } from "../tools/cdp.mjs";
 const PAGE = "modules/specs-and-plans/openspec.html";
 const sleep = (/** @type {number} */ ms) => new Promise((r) => setTimeout(r, ms));
 
-test("OpenSpec explainer: both acts play through the four stages, the tours show each file, → replays", async () => {
+test("OpenSpec explainer: both acts play through the five stages, the tours show each file, → replays", async () => {
   const server = await startServer({ port: 8411 });
   const chrome = await launchChrome({ width: 1280, height: 720 });
   try {
@@ -40,11 +40,11 @@ test("OpenSpec explainer: both acts play through the four stages, the tours show
       ["tasks.md", "openspec/changes/add-weekend-deposit/tasks.md", /tasks/],
       ["Tasks done", "openspec/changes/add-weekend-deposit/tasks.md", /ticks off/],
       ["bookings.py", "bookings.py", /do what the spec says/],
-      ["Sync", "bookings.py", /Syncing copies/],
+      ["Sync", "bookings.py", /Archiving does two things.*syncs.*archives/s],
     ];
-    assert.equal(await stages(), "todo todo todo todo");
+    assert.equal(await stages(), "todo todo todo todo todo");
     /** @type {Record<string, string>} the tracker once each turn is reached */
-    const tracker = { Answer: "now todo todo todo", "proposal.md": "done now todo todo", "Tasks done": "done done now todo", Sync: "done done done now" };
+    const tracker = { Answer: "now todo todo todo todo", "proposal.md": "done now todo todo todo", "Tasks done": "done done now todo todo", Sync: "done done done now todo" };
     for (const [title, file, callout] of act1) {
       await press("1"); await settle();
       if (tracker[title]) assert.equal(await stages(), tracker[title], title);
@@ -59,7 +59,7 @@ test("OpenSpec explainer: both acts play through the four stages, the tours show
     assert.equal(await viewing(), "openspec/specs/booking-deposit/spec.md");
     assert.equal(await calloutText(), "");
     assert.match(await treeText(), /archive\/2026-05-12-add-weekend-deposit\//);
-    assert.equal(await stages(), "done done done done");
+    assert.equal(await stages(), "done done done done done");
     assert.doesNotMatch(await treeText(), /proposal\.md/, "archived changes are listed without their contents");
     assert.match(await get(`document.querySelector("#input .opt").textContent`), /Continue.*Five months later/);
 
@@ -67,7 +67,7 @@ test("OpenSpec explainer: both acts play through the four stages, the tours show
     await press("1"); await settle();
     assert.equal(await where(), "Five months later · Explore");
     assert.equal(await calloutText(), "Five months later, a new requirement has come in.");
-    assert.equal(await stages(), "todo todo todo todo");
+    assert.equal(await stages(), "todo todo todo todo todo");
     await press("1"); await settle();
     assert.equal(await where(), "Five months later · The spec");
     assert.match(await highlighted(), /^The system SHALL NOT charge a deposit/);
