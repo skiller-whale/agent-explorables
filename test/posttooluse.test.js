@@ -19,7 +19,7 @@ test("PostToolUse explainer: steps, notes, the hash, and every note placed clear
     const note = () => get(`(() => { const b = document.querySelector("#bubble"); return b.hidden ? null : { folded: b.classList.contains("folded"), text: b.textContent }; })()`);
 
     await page.goto(new URL(PAGE, server.url).href);
-    assert.equal(await get(`document.title`), "Hooks explainer: PostToolUse");
+    assert.equal(await get(`document.title`), "Hooks explainer: Workflow");
     assert.equal(await get(`location.hash`), "#0");
     assert.equal(await where(), "What this shows");
 

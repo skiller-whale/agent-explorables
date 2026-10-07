@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hooks explainer: Workflow</title>
+<title>Hooks explainer: Blocking Edits</title>
 <link rel="stylesheet" href="../specs-and-plans/conversation.css">
 <link rel="stylesheet" href="harness.css">
 </head>
 <body>
 <div id="fit"><div id="stage">
   <header>
-    <h1>Hooks explainer: <span>Workflow</span></h1>
+    <h1>Hooks explainer: <span>Blocking Edits</span></h1>
     <div id="acts"><div class="act now"><div class="dots" id="dots"></div></div></div>
   </header>
   <div id="main" class="hooks">
@@ -32,8 +32,8 @@
         <g class="box" id="b-model" style="--c: var(--model)"><rect x="330" y="10" width="130" height="40" rx="8"/><text x="395" y="30">Model</text></g>
         <g class="box" id="b-settings" style="--c: var(--hook)"><rect x="10" y="490" width="108" height="44" rx="8"/><text class="mono" x="64" y="512">settings.json</text></g>
         <g class="box" id="b-edit" style="--c: var(--tool)"><rect x="132" y="490" width="96" height="44" rx="8"/><text x="180" y="512">Edit tool</text></g>
-        <g class="box" id="b-file" style="--c: var(--tool)"><rect x="242" y="490" width="96" height="44" rx="8"/><text x="290" y="505">Filesystem</text><text class="sub" x="290" y="522">api.js</text></g>
-        <g class="box" id="b-eslint" style="--c: var(--hook)"><rect x="352" y="490" width="118" height="44" rx="8"/><text class="mono" x="411" y="512">eslint</text></g>
+        <g class="box" id="b-file" style="--c: var(--tool)"><rect x="242" y="490" width="96" height="44" rx="8"/><text x="290" y="505">Filesystem</text><text class="sub" x="290" y="522">.env</text></g>
+        <g class="box" id="b-hook" style="--c: var(--hook)"><rect x="352" y="490" width="118" height="44" rx="8"/><text class="mono" x="411" y="512">protect.sh</text></g>
 
         <!-- the harness, with its loop -->
         <g id="harness">
@@ -41,11 +41,12 @@
           <text class="title" x="26" y="110">HARNESS</text>
 
           <path class="edge" id="e-start" d="M115 152 V172"/>
-          <path class="edge" id="e-prompt" d="M115 200 V232"/>
-          <path class="edge" id="e-ups" d="M115 260 V294"/>
+          <path class="edge" id="e-prompt" d="M115 200 V292"/>
           <path class="edge" id="e-tool" d="M185 308 H230 V243 H268"/>
-          <text class="elabel" id="l-tool" data-edge="e-tool" x="198" y="234">tool_use</text>
+          <text class="elabel" id="l-tool" data-edge="e-tool" x="240" y="282">tool_use</text>
           <path class="edge" id="e-pre" d="M345 257 V294"/>
+          <path class="edge" id="e-block" d="M300 229 V214 H160 V292"/>
+          <text class="elabel late" id="l-block" data-edge="e-block" x="196" y="208">blocked</text>
           <path class="edge" id="e-run" d="M345 322 V359"/>
           <path class="edge" id="e-post" d="M270 373 H170 V324"/>
           <path class="edge" id="e-reply" d="M115 322 V406"/>
@@ -54,7 +55,6 @@
 
           <g class="node" id="n-start"><rect x="45" y="124" width="140" height="28" rx="6"/><text x="115" y="138">Starting up</text></g>
           <g class="node" id="n-prompt"><rect x="45" y="172" width="140" height="28" rx="6"/><text x="115" y="186">Waiting for prompt</text></g>
-          <g class="node ev" id="n-ups"><rect x="45" y="232" width="140" height="28"/><text x="115" y="246">UserPromptSubmit</text></g>
           <g class="node" id="n-model"><rect x="45" y="294" width="140" height="28" rx="6"/><text x="115" y="308">Waiting for model</text></g>
           <g class="node ev" id="n-pre"><rect x="270" y="229" width="150" height="28"/><text x="345" y="243">PreToolUse</text></g>
           <g class="node" id="n-run"><rect x="270" y="294" width="150" height="28" rx="6"/><text x="345" y="308">Running tool</text></g>
@@ -76,8 +76,8 @@
         <div class="label">Registered hooks</div>
         <div id="reglist"></div>
       </section>
-      <section class="panel" id="hookterm" aria-label="Hook commands">
-        <div class="label">Hook commands</div>
+      <section class="panel" id="hookterm" aria-label="The hook's script">
+        <div class="label">The hook's script</div>
         <div id="hooklines"></div>
       </section>
     </div>
@@ -90,6 +90,6 @@
   <div id="bubble" role="button" tabindex="0" hidden></div>
 </div></div>
 
-<script type="module" src="posttooluse.js"></script>
+<script type="module" src="pretooluse.js"></script>
 </body>
 </html>

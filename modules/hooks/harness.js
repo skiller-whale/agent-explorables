@@ -45,6 +45,9 @@
  * @property {boolean} [registry]  the agent has read settings.json, so the registry is filled in from here on
  * @property {Line[]} [cc]  lines added to the conversation (a "think" line goes when the next line comes)
  * @property {Line[]} [term]  lines added to the terminal
+ * @property {number[]} [scriptHl]  with a hook script shown: the lines of it running at this step (from 0)
+ * @property {string} [stdin]  with a hook script shown: what it's given on stdin from this step on (HTML)
+ * @property {Line[]} [out]  with a hook script shown: what it outputs, from this step on
  * @property {string} [typed]  text waiting in the input box
  * @property {string} [button]  the input box's button: "Start", "Send" or (by default) "Next"
  * @property {Note} [note]
@@ -61,6 +64,10 @@
  * @typedef {object} Script
  * @property {string[]} events  the registry's rows, in order
  * @property {Hook[]} hooks  what settings.json registers
+ * @property {"full" | "line"} [registry]  "line" shows each hook on one line (event, matcher → command), with
+ *   no empty rows; the default shows every event in `events`, empty or not
+ * @property {{ name: string, lines: string[] }} [hookScript]  show this script in place of the hooks' terminal,
+ *   with its input and output
  * @property {Record<string, [string, string]>} edges  edge id -> [from state, to state]; a step may only
  *   stay in its state or move along one of these
  * @property {Step[]} steps
@@ -71,7 +78,7 @@
 
 /** Covering these matters most to least: what's in play at this step, states already passed, the rest. */
 const COVER = /** @type {const} */ ([
-  ["#harness .node.now, .box.lit, .arrow.on, .elabel.now, .reg, #term .ln, #hooklines .tl, #input .opt, #input .typed, .panel > .label, header, nav", 1000],
+  ["#harness .node.now, .box.lit, .arrow.on, .elabel.now, .reg, #term .ln, #hooklines .tl, #hooklines .io, #input .opt, #input .typed, .panel > .label, header, nav", 1000],
   ["#harness .node.seen:not(.now)", 6],
   ["#harness .node:not(.seen), .box:not(.lit), .elabel:not(.now), #harness .title", 1],
   ["#main > .panel, #right > .panel", 0.5], // straddling a column edge looks careless
@@ -165,6 +172,18 @@ export function start(script) {
       (x.term ?? []).forEach((l, i) => hook.append(line(l, "tl", fresh, i + (x.cc?.length ?? 0))));
     });
 
+    // or the hook's script, the lines running now, and what it was given and gave back
+    if (script.hookScript) {
+      const stdin = [...upTo].reverse().find((x) => x.stdin !== undefined)?.stdin;
+      const outAt = upTo.map((x) => x.out).filter(Boolean).pop();
+      const hl = new Set(s.scriptHl ?? []);
+      const code = script.hookScript.lines.map((l, i) => `<span class="line${hl.has(i) ? " hl" : ""}">${esc(l) || " "}</span>`).join("");
+      const freshIn = s.stdin !== undefined, freshOut = !!s.out;
+      hook.innerHTML = `<pre class="code">${code}</pre>
+        <div class="io" id="script-in"><span class="tag">input, on stdin</span>${stdin ? `<div class="${freshIn ? "fresh" : ""}">${stdin}</div>` : `<div class="none">Not run yet</div>`}</div>
+        <div class="io" id="script-out"><span class="tag">output</span>${outAt ? outAt.map((l) => `<div class="tl ${l.cls}${freshOut ? " fresh" : ""}">${l.html ?? esc(l.text ?? "")}</div>`).join("") : `<div class="none">Nothing yet</div>`}</div>`;
+    }
+
     // the input box
     const input = $("#input");
     input.innerHTML = "";
@@ -194,7 +213,10 @@ export function start(script) {
       e.classList.toggle("taken", taken.has(e.id));
       e.classList.toggle("now", e.id === s.edge);
     });
-    document.querySelectorAll(".elabel").forEach((l) => l.classList.toggle("now", l.getAttribute("data-edge") === s.edge));
+    document.querySelectorAll(".elabel").forEach((l) => {
+      l.classList.toggle("now", l.getAttribute("data-edge") === s.edge);
+      l.classList.toggle("taken", taken.has(l.getAttribute("data-edge") ?? ""));
+    });
     $el("#harness").classList.toggle("lit", !!s.state);
     document.querySelectorAll(".box").forEach((x) => x.classList.toggle("lit", (s.lit ?? []).includes(x.id)));
     document.querySelectorAll(".arrow").forEach((x) => x.classList.toggle("on", (s.arrows ?? []).includes(x.id)));
@@ -203,15 +225,17 @@ export function start(script) {
 
     // the registry: empty until the agent has read settings.json
     const loaded = upTo.some((x) => x.registry);
-    $("#reglist").innerHTML = loaded
-      ? script.events.map((ev) => {
+    $("#reglist").innerHTML = !loaded
+      ? `<div class="reg more">Not loaded yet.</div>`
+      : script.registry === "line"
+      ? script.hooks.map((h) => `<div class="reg line ${s.reg?.[h.event] ?? ""}" id="reg-${h.event}"><span class="ev">${h.event}</span> <span class="v">${esc(h.matcher)}</span> → <span class="v">${esc(h.command)}</span></div>`).join("")
+      : script.events.map((ev) => {
           const hooks = script.hooks.filter((h) => h.event === ev);
           const body = hooks.length
             ? hooks.map((h) => `<div class="entry"><span class="k">matcher</span> <span class="v">${esc(h.matcher)}</span>\n<span class="k">command</span> <span class="v">${esc(h.command)}</span></div>`).join("")
             : `<span class="none">none</span>`;
           return `<div class="reg ${s.reg?.[ev] ?? ""}" id="reg-${ev}"><span class="ev">${ev}</span>${body}</div>`;
-        }).join("") + `<div class="reg more">…</div>`
-      : `<div class="reg more">Not loaded yet.</div>`;
+        }).join("") + `<div class="reg more">…</div>`;
 
     // the nav
     document.querySelectorAll(".dot").forEach((d, i) => { d.className = `dot${i === at ? " now" : i < at ? " done" : ""}`; });

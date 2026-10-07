@@ -30,3 +30,23 @@ What they show about the mechanism, which the page follows:
 - **`stdin`** shows three of its keys, with `tool_input`'s contents left out.
 - **The code** in the diffs was written for the page, not taken from a run.
 - **The harness** is drawn as a loop of nine states. The real one does more (permissions, compaction, other hook events); the page shows the states and events this scenario passes through.
+
+## Blocking edits (PreToolUse)
+
+`pretooluse.html` is canned, from the example on the hooks module's "Blocking a Tool Call" slide: a `PreToolUse` hook on `Edit|Write` that runs a script, which blocks any edit to `.env`.
+
+### What it's checked against
+
+No new runs. The read-guard recordings (`recordings/hooks/read-guard/`, local only: Claude Code 2.1.278, Sonnet 5, 21 Sep 2026, three runs per case) record a `PreToolUse` command hook that reads the tool call from `stdin` and exits 2. The page follows what they show:
+
+- The hook's `stdin` carries `hook_event_name`, `tool_name` and `tool_input` (with `file_path`), among other keys.
+- On exit 2 the tool doesn't run, and the model gets an errored tool result in its place, reading `PreToolUse:<Tool> hook error: [<command>]: <stderr>`.
+- The model reads the reason back to the user, names the hook, and leaves changing it to the user. It didn't try another way round in any run.
+
+### Simplifications
+
+- **The tool.** The recordings block `Read`; the page blocks `Edit`. The hook mechanism is the same for any tool its matcher covers.
+- **The script** is shortened from the slide's (`jq` reads `stdin` directly; no comments). The registry and the note show the command as `.claude/hooks/protect.sh`; the slide's version uses `$CLAUDE_PROJECT_DIR`, which is more robust.
+- **`stdin`** shows `tool_name` and `tool_input` only.
+- **The hook error line** in the conversation leaves out the bracketed command.
+- **The model's replies** were written for the page.

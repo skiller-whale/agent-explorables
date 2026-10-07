@@ -58,7 +58,7 @@
 .reg + .reg { margin-top: 3px; }
 .reg .ev { color: var(--muted); }
 .reg .none { float: right; color: var(--dim); }
-.reg .entry { margin-top: 4px; padding: 6px 8px; border-radius: 4px; background: var(--panel2); color: var(--text); white-space: pre; }
+.reg .entry { margin-top: 4px; padding: 6px 8px; border-radius: 4px; background: var(--panel2); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
 .reg .entry .k { color: var(--muted); }
 .reg .entry .v { color: var(--syn-s); }
 .reg.look { border-color: var(--harness); background: #7cc4ff10; }
@@ -86,7 +86,7 @@
           border-radius: 8px; padding: 11px 14px; font-size: 15px; line-height: 1.45; box-shadow: 0 8px 24px #0009;
           transition: opacity .2s; }
 #bubble[hidden] { display: block; opacity: 0; pointer-events: none; }
-#bubble:has(pre) { max-width: 400px; }
+#bubble:has(pre) { max-width: 440px; }
 #bubble p { margin: 0; } #bubble p + p, #bubble pre { margin-top: 8px; }
 #bubble code { font: 13px var(--mono); background: #0000000f; padding: 0 3px; border-radius: 3px; }
 #bubble pre { font: 12px/1.45 var(--mono); background: #0000000c; padding: 6px 8px; border-radius: 4px; white-space: pre; }
@@ -109,3 +109,19 @@
 
 /* the nav: a hash that matches no step says so */
 #where .notice { color: var(--q); font-weight: 400; margin-left: 6px; }
+
+/* a hook's script in place of the terminal: the code with the running lines marked, its input and output */
+#hooklines .code { margin: 0 0 6px; padding: 8px 0; background: var(--panel2); border-radius: 6px; font: 12px/1.6 var(--mono); }
+#hooklines .code .line { display: block; padding: 0 10px; border-left: 2px solid transparent; white-space: pre; color: var(--muted); }
+#hooklines .code .line.hl { background: var(--hl); border-left-color: var(--hl-edge); color: var(--text); }
+#hooklines .io { border-left: 2px solid var(--line); padding: 2px 0 2px 8px; display: flex; flex-direction: column; gap: 2px; white-space: pre-wrap; }
+#hooklines #script-in { border-left-color: var(--harness); }
+#hooklines #script-out { border-left-color: var(--hook); }
+#hooklines .io .tag { color: var(--dim); font-size: 11px; }
+#hooklines .io .none { color: var(--dim); }
+#hooklines .io .fresh { animation: appear .35s ease both; }
+.reg.line { color: var(--muted); }
+.reg.line .v { color: var(--syn-s); }
+
+/* an edge (and its label) marked late stays hidden until the agent takes it, e.g. the blocked path */
+.edge.late:not(.taken):not(.now), .elabel.late:not(.taken):not(.now) { display: none; }
