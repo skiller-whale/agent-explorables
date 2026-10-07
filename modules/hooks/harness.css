@@ -79,7 +79,7 @@
 .tl.exit.bad { color: var(--hook); }
 .tl.exit.good { color: var(--ok); }
 .tl .cmt { color: var(--syn-c); font-weight: 400; }
-.tl.gap { border-top: 1px dashed var(--line); margin: 4px 0; }
+.tl.gap { border-top: 1px dashed var(--line); margin: 2px 0; }
 
 /* callouts: next to the thing to look at, with a pointer */
 #bubble { position: absolute; z-index: 10; max-width: 300px; background: var(--callout); color: var(--callout-ink);

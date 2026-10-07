@@ -27,6 +27,6 @@ What they show about the mechanism, which the page follows:
 - **Exploration.** The runs Glob and Read before editing. The page goes straight to the Edit.
 - **The hook error line** in the conversation is shortened from the text the model receives (above) to `PostToolUse:Edit hook blocking error: <the lint error>`. How Claude Code's interactive screen shows it can't be recorded headlessly, so that line's look is invented.
 - **ESLint's output** is one line (`api.js 14:11 'res' is assigned a value but never used no-unused-vars`). Real output names the file with its full path on a line of its own, then the problem, then a count.
-- **`stdin`** shows three of its keys, with `file_path` relative. It is absolute in the runs.
+- **`stdin`** shows three of its keys, with `tool_input`'s contents left out.
 - **The code** in the diffs was written for the page, not taken from a run.
 - **The harness** is drawn as a loop of nine states. The real one does more (permissions, compaction, other hook events); the page shows the states and events this scenario passes through.

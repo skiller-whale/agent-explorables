@@ -73,7 +73,7 @@ const script = {
 
     { title: "The hook runs", state: "n-post", lit: ["b-eslint"], arrows: ["a-hook"],
       term: [{ cls: "cmd", text: HOOK_CMD },
-             { cls: "stdin", html: `<span class="tag">stdin</span> {"hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": {"file_path": "api.js", …}, …}` }],
+             { cls: "stdin", html: `<span class="tag">stdin</span> {"hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": {…}, …}` }],
       note: { html: "The harness runs the hook’s command and sends it the tool call as JSON on <code>stdin</code>. In this case the command ignores it and lints the whole project.", at: "#hooklines .stdin", side: "below" } },
 
     { title: "The hook fails", state: "n-post", lit: ["b-eslint"], arrows: ["a-hook"],
