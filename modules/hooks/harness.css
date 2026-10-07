@@ -1,0 +1,111 @@
+/* The hooks explainers: the agent's conversation on the left, the harness as a loop of states in the
+   middle with the things it talks to around it, the hook registry and the hooks' terminal on the right.
+   Builds on the spec-driven explainers' stylesheet (conversation.css), so the pages look alike. */
+:root { --harness: #7cc4ff; --model: #c9a2ff; --tool: #7ee0a1; --hook: #f0c674; --you: #e4e7ec; }
+#main.hooks { grid-template-columns: 400px 1fr 350px; }
+#right { display: grid; grid-template-rows: auto 1fr; gap: 12px; min-height: 0; }
+
+/* the agent's conversation: same as the spec-driven pane, plus hook feedback lines */
+.ln.hookfb { color: var(--hook); padding-left: 18px; }
+.ln.hookfb::before { content: "⎿ "; color: var(--dim); margin-left: -18px; }
+.ln.diff .del { color: #ff8a8a; }
+.ln.think { color: var(--claude); }
+.ln.think::before { content: "✻ "; }
+.ln.fresh { animation: appear .35s ease both; }
+@keyframes appear { from { opacity: 0; } }
+
+/* middle: the diagram */
+#diagram { padding: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+#diagram svg { width: 100%; height: 100%; }
+.box rect { fill: var(--panel2); stroke: var(--line); stroke-width: 1.2; transition: all .3s; }
+.box text { fill: var(--dim); font: 600 13px var(--sans); text-anchor: middle; dominant-baseline: middle; transition: fill .3s; }
+.box text.mono { font: 12px var(--mono); }
+.box text.sub { font: 11px var(--mono); font-weight: 400; }
+.box.lit rect { stroke: var(--c); fill: color-mix(in srgb, var(--c) 12%, var(--panel2)); }
+.box.lit text { fill: var(--text); }
+#harness > rect { fill: #121820; stroke: var(--line); stroke-width: 1.5; rx: 12; }
+#harness.lit > rect { stroke: color-mix(in srgb, var(--harness) 55%, transparent); fill: #141c26; }
+#harness .title { fill: var(--muted); font: 600 11px var(--sans); letter-spacing: .08em; text-anchor: start; }
+#harness.lit .title { fill: var(--harness); }
+
+/* the state machine inside the harness */
+.node rect { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; transition: all .3s; }
+.node text { fill: var(--dim); font: 12px var(--sans); text-anchor: middle; dominant-baseline: middle; transition: fill .3s; }
+.node.ev rect { stroke-dasharray: 0; rx: 14; }
+.node.ev text { font: 12px var(--mono); }
+.node.seen text { fill: var(--muted); }
+.node.seen rect { stroke: #3a4250; }
+.node.now rect { fill: color-mix(in srgb, var(--harness) 22%, var(--panel)); stroke: var(--harness); stroke-width: 2; }
+.node.ev.now rect { fill: color-mix(in srgb, var(--hook) 20%, var(--panel)); stroke: var(--hook); }
+.node.now text { fill: var(--text); font-weight: 600; }
+.edge { fill: none; stroke: #343b47; stroke-width: 1.3; marker-end: url(#tip); }
+.edge.taken { stroke: #5a6474; }
+.edge.now { stroke: var(--harness); stroke-width: 2; marker-end: url(#tip-now); }
+.elabel { fill: var(--dim); font: 11px var(--mono); }
+.elabel.now { fill: var(--harness); }
+
+/* arrows between the harness and the things around it */
+.arrow path { fill: none; stroke: var(--c); stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#tip-arrow); animation: flow 1s linear infinite; }
+.arrow text { fill: var(--c); font: 600 11px var(--mono); }
+.arrow { display: none; }
+.arrow.on { display: inline; }
+@keyframes flow { to { stroke-dashoffset: -11; } }
+
+/* right: registry and terminal */
+#registry, #hookterm { padding: 12px; overflow: hidden; }
+#registry .label, #hookterm .label { margin-bottom: 8px; }
+.reg { border: 1px solid transparent; border-radius: 6px; padding: 5px 8px; font: 12px/1.45 var(--mono); color: var(--dim); transition: all .3s; }
+.reg + .reg { margin-top: 3px; }
+.reg .ev { color: var(--muted); }
+.reg .none { float: right; color: var(--dim); }
+.reg .entry { margin-top: 4px; padding: 6px 8px; border-radius: 4px; background: var(--panel2); color: var(--text); white-space: pre; }
+.reg .entry .k { color: var(--muted); }
+.reg .entry .v { color: var(--syn-s); }
+.reg.look { border-color: var(--harness); background: #7cc4ff10; }
+.reg.look .ev { color: var(--text); }
+.reg.match { border-color: var(--hook); background: #f0c67412; }
+.reg.match .ev { color: var(--hook); }
+.reg.more { color: var(--dim); }
+#hookterm { display: flex; flex-direction: column; }
+#hooklines { font: 12px/1.5 var(--mono); display: flex; flex-direction: column; gap: 4px; flex: 1; overflow: hidden; }
+#hooklines:empty::before { content: "No hook has run yet."; color: var(--dim); margin: auto; }
+.tl { white-space: pre-wrap; color: var(--muted); }
+.tl.cmd { color: var(--text); }
+.tl.cmd::before { content: "$ "; color: var(--ok); }
+.tl.stdin { border-left: 2px solid var(--harness); padding-left: 8px; color: var(--muted); }
+.tl.stdin .tag, .tl.err .tag, .tl.exit .tag { color: var(--dim); }
+.tl.err { border-left: 2px solid #ff8a8a; padding-left: 8px; color: #ffb3b3; }
+.tl.exit { font-weight: 600; }
+.tl.exit.bad { color: var(--hook); }
+.tl.exit.good { color: var(--ok); }
+.tl .cmt { color: var(--syn-c); font-weight: 400; }
+.tl.gap { border-top: 1px dashed var(--line); margin: 4px 0; }
+
+/* callouts: next to the thing to look at, with a pointer */
+#bubble { position: absolute; z-index: 10; max-width: 300px; background: var(--callout); color: var(--callout-ink);
+          border-radius: 8px; padding: 11px 14px; font-size: 15px; line-height: 1.45; box-shadow: 0 8px 24px #0009;
+          transition: opacity .2s; }
+#bubble[hidden] { display: block; opacity: 0; pointer-events: none; }
+#bubble:has(pre) { max-width: 400px; }
+#bubble p { margin: 0; } #bubble p + p, #bubble pre { margin-top: 8px; }
+#bubble code { font: 13px var(--mono); background: #0000000f; padding: 0 3px; border-radius: 3px; }
+#bubble pre { font: 12px/1.45 var(--mono); background: #0000000c; padding: 6px 8px; border-radius: 4px; white-space: pre; }
+#bubble::after { content: ""; position: absolute; border: 9px solid transparent; }
+/* the pointers tuck 1px into the box, so no hairline shows between them when the page is scaled */
+#bubble.left::after { right: -8px; top: var(--py, 20px); border-right: 0; border-left-color: var(--callout); }
+#bubble.right::after { left: -8px; top: var(--py, 20px); border-left: 0; border-right-color: var(--callout); }
+#bubble.above::after { bottom: -8px; left: var(--px, 30px); border-bottom: 0; border-top-color: var(--callout); }
+#bubble.below::after { top: -8px; left: var(--px, 30px); border-top: 0; border-bottom-color: var(--callout); }
+#bubble.center::after { display: none; }
+/* folded: clicking a note folds it to a small ?, and clicking the ? opens it again */
+#bubble { cursor: pointer; }
+#bubble:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+#bubble.folded { width: 26px; height: 26px; padding: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+                 font: 700 15px var(--sans); box-shadow: 0 4px 12px #0008; opacity: .45; }
+#bubble.folded:hover { opacity: 1; }
+#bubble.folded::after { border-width: 6px; }
+#bubble.folded.left::after { right: -5px; } #bubble.folded.right::after { left: -5px; }
+#bubble.folded.above::after { bottom: -5px; } #bubble.folded.below::after { top: -5px; }
+
+/* the nav: a hash that matches no step says so */
+#where .notice { color: var(--q); font-weight: 400; margin-left: 6px; }
