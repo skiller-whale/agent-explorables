@@ -3,5 +3,6 @@
 index.html
 modules/hooks/posttooluse.html
 modules/hooks/pretooluse.html
+modules/hooks/prompt-hook.html
 modules/specs-and-plans/plan-mode.html
 modules/specs-and-plans/openspec.html

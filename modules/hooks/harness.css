@@ -125,3 +125,4 @@
 
 /* an edge (and its label) marked late stays hidden until the agent takes it, e.g. the blocked path */
 .edge.late:not(.taken):not(.now), .elabel.late:not(.taken):not(.now) { display: none; }
+#hooklines .io .reasoning { color: var(--muted); }

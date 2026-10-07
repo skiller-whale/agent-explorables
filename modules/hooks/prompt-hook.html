@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hooks explainer: Prompt Hooks</title>
+<link rel="stylesheet" href="../specs-and-plans/conversation.css">
+<link rel="stylesheet" href="harness.css">
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <h1>Hooks explainer: <span>Prompt Hooks</span></h1>
+    <div id="acts"><div class="act now"><div class="dots" id="dots"></div></div></div>
+  </header>
+  <div id="main" class="hooks">
+    <section class="panel" id="cc" aria-label="The agent">
+      <div id="term" aria-live="polite"></div>
+      <div id="input"></div>
+      <div id="mode"></div>
+    </section>
+    <section class="panel" id="diagram" aria-label="How the agent runs">
+      <svg viewBox="0 0 480 545" aria-hidden="true">
+        <defs>
+          <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5a6474"/></marker>
+          <marker id="tip-now" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#7cc4ff"/></marker>
+          <marker id="tip-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+        </defs>
+
+        <!-- the things around the harness -->
+        <g class="box" id="b-you" style="--c: var(--you)"><rect x="20" y="10" width="120" height="40" rx="8"/><text x="80" y="30">User</text></g>
+        <g class="box" id="b-model" style="--c: var(--model)"><rect x="330" y="10" width="130" height="40" rx="8"/><text x="395" y="30">Model</text></g>
+        <g class="box" id="b-settings" style="--c: var(--hook)"><rect x="10" y="490" width="108" height="44" rx="8"/><text class="mono" x="64" y="512">settings.json</text></g>
+        <g class="box" id="b-edit" style="--c: var(--tool)"><rect x="132" y="490" width="96" height="44" rx="8"/><text x="180" y="512">Bash tool</text></g>
+        <g class="box" id="b-file" style="--c: var(--tool)"><rect x="242" y="490" width="96" height="44" rx="8"/><text x="290" y="505">Filesystem</text><text class="sub" x="290" y="522">checkout.py</text></g>
+        <g class="box" id="b-hook" style="--c: var(--hook)"><rect x="352" y="490" width="118" height="44" rx="8"/><text x="411" y="512">Hook model</text></g>
+
+        <!-- the harness, with its loop -->
+        <g id="harness">
+          <rect x="10" y="88" width="460" height="374"/>
+          <text class="title" x="26" y="110">HARNESS</text>
+
+          <path class="edge" id="e-start" d="M115 152 V172"/>
+          <path class="edge" id="e-prompt" d="M115 200 V292"/>
+          <path class="edge" id="e-tool" d="M185 308 H230 V243 H268"/>
+          <text class="elabel" id="l-tool" data-edge="e-tool" x="240" y="282">tool_use</text>
+          <path class="edge" id="e-pre" d="M345 257 V294"/>
+          <path class="edge" id="e-block" d="M300 229 V214 H160 V292"/>
+          <text class="elabel late" id="l-block" data-edge="e-block" x="196" y="208">blocked</text>
+          <path class="edge" id="e-run" d="M345 322 V359"/>
+          <path class="edge" id="e-post" d="M270 373 H170 V324"/>
+          <path class="edge" id="e-reply" d="M115 322 V406"/>
+          <text class="elabel" id="l-reply" data-edge="e-reply" x="122" y="372">reply</text>
+          <path class="edge" id="e-stop" d="M45 420 H28 V186 H43"/>
+
+          <g class="node" id="n-start"><rect x="45" y="124" width="140" height="28" rx="6"/><text x="115" y="138">Starting up</text></g>
+          <g class="node" id="n-prompt"><rect x="45" y="172" width="140" height="28" rx="6"/><text x="115" y="186">Waiting for prompt</text></g>
+          <g class="node" id="n-model"><rect x="45" y="294" width="140" height="28" rx="6"/><text x="115" y="308">Waiting for model</text></g>
+          <g class="node ev" id="n-pre"><rect x="270" y="229" width="150" height="28"/><text x="345" y="243">PreToolUse</text></g>
+          <g class="node" id="n-run"><rect x="270" y="294" width="150" height="28" rx="6"/><text x="345" y="308">Running tool</text></g>
+          <g class="node ev" id="n-post"><rect x="270" y="359" width="150" height="28"/><text x="345" y="373">PostToolUse</text></g>
+          <g class="node ev" id="n-stop"><rect x="45" y="406" width="140" height="28"/><text x="115" y="420">Stop</text></g>
+        </g>
+
+        <!-- arrows: harness <-> the things around it -->
+        <g class="arrow" id="a-settings" style="--c: var(--hook)"><path d="M64 488 V466"/><text x="72" y="481">hooks</text></g>
+        <g class="arrow" id="a-you" style="--c: var(--you)"><path d="M80 52 V84"/><text x="88" y="72">prompt</text></g>
+        <g class="arrow" id="a-ctx" style="--c: var(--model)"><path d="M395 86 V54"/><text x="387" y="72" text-anchor="end" id="t-ctx">context</text></g>
+        <g class="arrow" id="a-reply" style="--c: var(--model)"><path d="M395 52 V84"/><text x="403" y="72" id="t-reply">reply</text></g>
+        <g class="arrow" id="a-edit" style="--c: var(--tool)"><path d="M180 464 V486"/><path d="M230 512 H238"/></g>
+        <g class="arrow" id="a-hook" style="--c: var(--hook)"><path d="M400 464 V486"/><path d="M422 488 V466"/><text x="346" y="481">prompt</text><text x="428" y="481">answer</text></g>
+      </svg>
+    </section>
+    <div id="right">
+      <section class="panel" id="registry" aria-label="Registered hooks">
+        <div class="label">Registered hooks</div>
+        <div id="reglist"></div>
+      </section>
+      <section class="panel" id="hookterm" aria-label="The hook's prompt">
+        <div class="label">The hook's prompt</div>
+        <div id="hooklines"></div>
+      </section>
+    </div>
+  </div>
+  <nav>
+    <button id="back" title="Back (←)" aria-label="Back">←</button>
+    <button id="next" title="Next (→)" aria-label="Next">→</button>
+    <span id="where"></span>
+  </nav>
+  <div id="bubble" role="button" tabindex="0" hidden></div>
+</div></div>
+
+<script type="module" src="prompt-hook.js"></script>
+</body>
+</html>

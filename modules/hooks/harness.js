@@ -66,8 +66,9 @@
  * @property {Hook[]} hooks  what settings.json registers
  * @property {"full" | "line"} [registry]  "line" shows each hook on one line (event, matcher → command), with
  *   no empty rows; the default shows every event in `events`, empty or not
- * @property {{ name: string, lines: string[] }} [hookScript]  show this script in place of the hooks' terminal,
- *   with its input and output
+ * @property {{ name: string, lines: string[], inLabel?: string, outLabel?: string }} [hookScript]  show this
+ *   script (or prompt) in place of the hooks' terminal, with its input and output, labelled `inLabel` and
+ *   `outLabel` (default "input, on stdin" and "output")
  * @property {Record<string, [string, string]>} edges  edge id -> [from state, to state]; a step may only
  *   stay in its state or move along one of these
  * @property {Step[]} steps
@@ -180,8 +181,8 @@ export function start(script) {
       const code = script.hookScript.lines.map((l, i) => `<span class="line${hl.has(i) ? " hl" : ""}">${esc(l) || " "}</span>`).join("");
       const freshIn = s.stdin !== undefined, freshOut = !!s.out;
       hook.innerHTML = `<pre class="code">${code}</pre>
-        <div class="io" id="script-in"><span class="tag">input, on stdin</span>${stdin ? `<div class="${freshIn ? "fresh" : ""}">${stdin}</div>` : `<div class="none">Not run yet</div>`}</div>
-        <div class="io" id="script-out"><span class="tag">output</span>${outAt ? outAt.map((l) => `<div class="tl ${l.cls}${freshOut ? " fresh" : ""}">${l.html ?? esc(l.text ?? "")}</div>`).join("") : `<div class="none">Nothing yet</div>`}</div>`;
+        <div class="io" id="script-in"><span class="tag">${esc(script.hookScript.inLabel ?? "input, on stdin")}</span>${stdin ? `<div class="${freshIn ? "fresh" : ""}">${stdin}</div>` : `<div class="none">Not run yet</div>`}</div>
+        <div class="io" id="script-out"><span class="tag">${esc(script.hookScript.outLabel ?? "output")}</span>${outAt ? outAt.map((l) => `<div class="tl ${l.cls}${freshOut ? " fresh" : ""}">${l.html ?? esc(l.text ?? "")}</div>`).join("") : `<div class="none">Nothing yet</div>`}</div>`;
     }
 
     // the input box
@@ -263,9 +264,12 @@ export function start(script) {
     bub.title = open ? "Close the note" : "Open the note";
     bub.setAttribute("aria-expanded", String(open));
     bub.style.left = "0px"; bub.style.top = "0px"; // measure at full width, not squeezed against an edge
+    bub.style.maxWidth = "";
     const el = document.querySelector(note.at);
     if (!el) return;
     const t = box(el);
+    // a note centred on a panel fits inside it
+    if (note.side === "center") bub.style.maxWidth = `${Math.min(parseFloat(getComputedStyle(bub).maxWidth) || Infinity, t.w - 24)}px`;
     const w = bub.offsetWidth, h = bub.offsetHeight;
     const gap = 14, tip = 9, m = 10;
 
@@ -286,15 +290,16 @@ export function start(script) {
     };
 
     if (note.side === "center") {
-      const x = t.x + t.w / 2 - w / 2, y = t.y + t.h / 2 - h / 2;
+      const x = Math.max(12, Math.min(W - 12 - w, t.x + t.w / 2 - w / 2)), y = Math.max(12, Math.min(H - 12 - h, t.y + t.h / 2 - h / 2));
       if (!open) return fold("center", x, y, 0);
       bub.style.left = `${x}px`; bub.style.top = `${y}px`;
       return;
     }
 
+    const may = note.mayCover;
     const obstacles = COVER.flatMap(([q, wt]) => [...document.querySelectorAll(q)]
       .filter((e) => e !== el && !e.contains(el) && !el.contains(e))
-      .map((e) => ({ ...box(e), wt })).filter((r) => r.w && r.h)).concat([{ ...t, wt: 1000 }]);
+      .map((e) => ({ ...box(e), wt: may && e.matches(may) ? Math.min(wt, 1) : wt })).filter((r) => r.w && r.h)).concat([{ ...t, wt: 1000 }]);
     /** @param {number} x @param {number} y */
     const cover = (x, y) => obstacles.reduce((a, r) =>
       a + r.wt * Math.max(0, Math.min(x + w, r.x + r.w) - Math.max(x, r.x)) * Math.max(0, Math.min(y + h, r.y + r.h) - Math.max(y, r.y)), 0);
