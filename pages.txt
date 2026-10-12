@@ -6,3 +6,6 @@ modules/hooks/pretooluse.html
 modules/hooks/prompt-hook.html
 modules/specs-and-plans/plan-mode.html
 modules/specs-and-plans/openspec.html
+modules/subagents/research.html
+modules/subagents/fan-out.html
+modules/subagents/custom.html

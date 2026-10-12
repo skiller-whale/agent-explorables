@@ -1,0 +1,345 @@
+<title>Project Historian Scenario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column for the story, with wide figures (cast, screen mock, sources) breaking out to the full width. */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #1d2330; --dim: #5d6677; --line: #dde1e8;
+  --accent: #2f6fdb; --sub: #0e8a7a; --tool: #8a5a00; --hl: #fff4c7; --hl-edge: #d9a400; --code: #f0f2f6;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151b; --panel: #1a1f28; --fg: #e3e7ee; --dim: #98a2b3; --line: #2c3340;
+  --accent: #6ea2ff; --sub: #4cc7b5; --tool: #e0a84a; --hl: #3a3420; --hl-edge: #d9a400; --code: #151a22; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12151b; --panel: #1a1f28; --fg: #e3e7ee; --dim: #98a2b3; --line: #2c3340;
+  --accent: #6ea2ff; --sub: #4cc7b5; --tool: #e0a84a; --hl: #3a3420; --hl-edge: #d9a400; --code: #151a22; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-inline: 16px; padding-block: 40px 80px; display: flex; flex-direction: column; gap: 40px; }
+.read { max-width: 68ch; }
+h1 { font-size: 30px; line-height: 1.2; margin: 0 0 8px; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 20px; margin: 0 0 12px; font-weight: 600; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0 0 6px; font-weight: 600; }
+p { margin: 0 0 12px; }
+.lede { color: var(--dim); font-size: 17px; }
+.eyebrow { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-bottom: 10px; }
+code, pre { font-family: var(--mono); font-size: 13px; }
+code { background: var(--code); padding: 1px 5px; border-radius: 4px; }
+pre { margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; line-height: 1.55; }
+pre code { background: none; padding: 0; }
+section { display: flex; flex-direction: column; gap: 14px; }
+ul { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+
+/* the cast */
+.cast { display: grid; grid-template-columns: 1fr auto 1fr auto 1.2fr; align-items: center; gap: 12px; overflow-x: auto; }
+.node { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+.node .who { font-weight: 600; } .node .meta { font: 12px/1.4 var(--mono); color: var(--dim); margin-top: 4px; }
+.node.main .who { color: var(--accent); } .node.sub .who { color: var(--sub); } .node.sub { border-color: var(--sub); }
+.arrow { font: 12px/1.3 var(--mono); color: var(--dim); text-align: center; white-space: nowrap; }
+.arrow b { display: block; font-size: 20px; color: var(--fg); font-weight: 400; }
+.sources { display: flex; flex-direction: column; gap: 8px; }
+.src { background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
+.src b { font-family: var(--mono); font-weight: 500; color: var(--tool); }
+@media (max-width: 760px) { .cast { grid-template-columns: 1fr; } .arrow b { transform: rotate(90deg); } }
+
+/* the screen mock */
+.mock { background: #10141b; color: #dfe4ec; border-radius: 12px; padding: 14px; overflow-x: auto; font: 12px/1.5 var(--mono); }
+.mock .bar { display: flex; justify-content: space-between; font: 600 13px var(--sans); margin-bottom: 10px; color: #dfe4ec; }
+.mock .bar span { font-weight: 400; color: #8f99aa; }
+.mock .cols { display: grid; grid-template-columns: 1fr 1fr 1.25fr; gap: 10px; min-width: 820px; }
+.mock .col { border: 1px solid #2a313d; border-radius: 8px; background: #161b23; display: flex; flex-direction: column; min-height: 300px; }
+.mock .col.sel { border-color: #3fae9f; }
+.mock .hd { padding: 7px 10px; border-bottom: 1px solid #2a313d; display: flex; justify-content: space-between; gap: 8px; }
+.mock .hd .n { font-weight: 600; color: #7fb0ff; } .mock .col.sel .hd .n { color: #57cdbb; }
+.mock .hd .c { color: #8f99aa; }
+.mock .bd { padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+.mock .u { background: #212834; padding: 4px 8px; border-radius: 4px; }
+.mock .t { color: #8f99aa; } .mock .t::before { content: "● "; color: #4cc78a; }
+.mock .t.spin::before { content: "◌ "; color: #e0a84a; }
+.mock .dimmed { color: #6c7686; }
+.mock .issue { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-family: var(--sans); font-size: 12.5px; }
+.mock .issue .k { font: 500 11px var(--mono); color: #8f99aa; }
+.mock .issue .ttl { font-weight: 600; font-size: 14px; }
+.mock .issue .chip { display: inline-block; font: 500 10.5px var(--mono); padding: 1px 6px; border-radius: 10px; background: #1f3b2e; color: #7fdcae; margin-right: 6px; }
+.mock .issue .hl { background: #3a3420; box-shadow: inset 2px 0 0 #d9a400; padding: 2px 6px; }
+.mock .note { align-self: start; background: #fff6d6; color: #2a2412; font: 13px/1.45 var(--sans); padding: 10px 12px; border-radius: 8px; max-width: 280px; margin: 10px 0 0 auto; }
+.cap { color: var(--dim); font-size: 13px; }
+
+/* annotated agent file */
+.file { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.file pre .k { color: var(--accent); } .file pre .c { color: var(--dim); }
+.file pre .m { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); display: inline-block; width: 100%; }
+.notes { display: flex; flex-direction: column; gap: 10px; }
+.notes div { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
+.notes b { font-family: var(--mono); font-weight: 500; font-size: 13px; }
+@media (max-width: 760px) { .file { grid-template-columns: 1fr; } }
+
+/* the made-up sources */
+.cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .cards { grid-template-columns: 1fr; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; min-width: 0; font-size: 14px; }
+.card .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; font: 12px var(--mono); color: var(--dim); }
+.card .ttl { font-weight: 600; font-size: 15px; }
+.chip { font: 500 11px var(--mono); padding: 2px 8px; border-radius: 10px; background: color-mix(in srgb, var(--sub) 18%, transparent); color: var(--sub); white-space: nowrap; }
+.card .hl { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); padding: 2px 8px; }
+.card p { margin: 0; }
+
+/* steps */
+.steps { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tablewrap { overflow-x: auto; }
+.steps th, .steps td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.steps th { font: 500 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.steps td:first-child { font-family: var(--mono); color: var(--dim); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.steps td.who-main { color: var(--accent); white-space: nowrap; } .steps td.who-sub { color: var(--sub); white-space: nowrap; }
+
+.qs { counter-reset: q; list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.qs li { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin: 0; }
+.qs li b { display: block; margin-bottom: 4px; }
+.flag { border-left: 3px solid var(--hl-edge); padding: 10px 14px; background: var(--panel); border-radius: 0 8px 8px 0; font-size: 14px; }
+</style>
+
+<div class="wrap">
+
+<header class="read">
+  <div class="eyebrow">Subagents explainer 3 · scenario draft · 12 Oct 2026</div>
+  <h1>Custom subagents: the project historian</h1>
+  <p class="lede">A made-up company, a made-up question and made-up sources, kept small. A developer wants to change some odd-looking code, and a custom subagent with access to the issue tracker, the wiki and the other repos finds out why it's there, and whether that reason still holds. Nothing has been run yet.</p>
+</header>
+
+<section class="read">
+  <h2>The situation</h2>
+  <p>Fernway is a fictional grocery delivery company. A developer is working in its <code>checkout</code> repo, where delivery fees are always rounded up to the next 50p. A customer has complained about paying £3.50 for a £3.04 fee, and the developer wants to drop the rounding. The code only says <code># Round up to the next 50p (FIN-212)</code>.</p>
+  <p>The team has a custom subagent, <code>project-historian</code>, for exactly this kind of question. It has the issue tracker and the wiki as MCP servers, reads the other Fernway repos, runs on a cheaper model, and comes back with a short answer that cites its sources.</p>
+</section>
+
+<section>
+  <h2>Who's involved</h2>
+  <div class="cast" role="img" aria-label="The developer asks the main agent, which hands the question to the project-historian subagent, which reads the tracker, the wiki and other repos">
+    <div class="node main"><div class="who">Main agent</div><div class="meta">Opus · in checkout/<br>no tracker or wiki</div></div>
+    <div class="arrow"><b>→</b>Agent call<br>"why the 50p?"</div>
+    <div class="node sub"><div class="who">project-historian</div><div class="meta">Sonnet · own system prompt<br>read-only tools</div></div>
+    <div class="arrow"><b>→</b>its own<br>tools</div>
+    <div class="sources">
+      <div class="src"><b>tracker</b> MCP · search and read issues</div>
+      <div class="src"><b>wiki</b> MCP · search and read pages</div>
+      <div class="src"><b>~/fernway/*</b> · other repos, Grep and Read</div>
+    </div>
+  </div>
+  <p class="cap read">The main agent never sees the tracker or the wiki, or what the subagent read there. It gets back a report of about 120 words.</p>
+</section>
+
+<section>
+  <h2>The agent file</h2>
+  <p class="read">Shown on the right on the first step, as a real artefact. It's the module's own shape (frontmatter for settings, body for the system prompt), cut down to the settings this story uses.</p>
+  <div class="file">
+<pre><code><span class="c"># .claude/agents/project-historian.md</span>
+---
+<span class="m"><span class="k">name</span>: project-historian</span>
+<span class="m"><span class="k">description</span>: Finds out why Fernway's code is the way
+  it is, from the issue tracker, the wiki and the other
+  repos. Use before changing behaviour whose reason
+  isn't clear from the code.</span>
+<span class="k">tools</span>: Read, Grep, Glob, mcp__tracker, mcp__wiki
+<span class="m"><span class="k">mcpServers</span>:
+  - tracker:
+      type: http
+      url: https://tracker.fernway.internal/mcp
+  - wiki:
+      type: http
+      url: https://wiki.fernway.internal/mcp</span>
+<span class="k">model</span>: sonnet
+---
+
+You answer "why is it like this?" questions about
+Fernway's code.
+
+Look in this order:
+1. The issue tracker: search for the feature, then
+   read the issues it links to.
+2. The wiki: decision records (ADR-*) and team pages.
+3. The other Fernway repos, cloned under ~/fernway/.
+
+Report in under 150 words:
+- the reason, citing each source by its ID
+- whether that reason still holds, and what shows it
+- who to ask, if the sources disagree
+
+Quote your sources. Don't guess. Never change anything.</code></pre>
+    <div class="notes">
+      <div><b>description</b> is what the main agent reads to decide to delegate. The developer never names the subagent.</div>
+      <div><b>mcpServers</b> defined inline here are connected only while this subagent runs. The main agent never gets the tracker or wiki tools, so their tool definitions and results stay out of its context.</div>
+      <div><b>tools</b> is an allowlist: once it's set, MCP tools are only available if listed, here as whole servers (<code>mcp__tracker</code>).</div>
+      <div><b>model: sonnet</b>, cheaper than the main agent's Opus, is enough for searching and summarising.</div>
+      <div>The body is its own guidance: where to look, in what order, and what to send back.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>How it plays out</h2>
+  <pre class="mermaid">
+sequenceDiagram
+  actor Dev as Developer
+  participant Main as Main agent
+  participant Hist as project-historian
+  participant Src as tracker · wiki · repos
+  Dev->>Main: Can we drop the 50p rounding? Check why it's there first.
+  Main->>Main: Grep fees.py, finds "(FIN-212)"
+  Main->>Hist: Agent call: why do we round delivery fees to 50p?
+  Hist->>Src: search issues "delivery fee rounding"
+  Src-->>Hist: FIN-212, links ADR-014
+  Hist->>Src: read wiki ADR-014
+  Src-->>Hist: "Revisit if we move off Paylink"
+  Hist->>Src: search issues "Paylink"
+  Src-->>Hist: PAY-301, Done 14 Mar 2026
+  Hist->>Src: grep payments-service for paylink
+  Src-->>Hist: only "Removed Paylink client" in CHANGELOG
+  Hist-->>Main: report: reason no longer holds, ask Finance Ops
+  Main-->>Dev: answer, offers to remove the rounding
+  </pre>
+</section>
+
+<section>
+  <h2>What the screen looks like</h2>
+  <p class="read">The Research explainer's layout, with one subagent. This is step 6, when the subagent has found the decision record. The right panel needs two new kinds of view in the engine: an issue and a wiki page.</p>
+  <div class="mock" aria-label="Mock of the explainer at step 6">
+    <div class="bar">Subagents explainer: Custom subagents <span>Session cost $0.061</span></div>
+    <div class="cols">
+      <div class="col">
+        <div class="hd"><span class="n">Main agent</span><span class="c">opus · 15.2k</span></div>
+        <div class="bd">
+          <div class="u">&gt; Customers are complaining that delivery fees are rounded up to 50p. Can we drop that? Check why it's there first.</div>
+          <div class="t">Grep(round|50p in checkout/fees.py)</div>
+          <div>The rounding cites FIN-212. I'll have project-historian find out why it was added.</div>
+          <div class="t spin">project-historian(Why delivery fees round to 50p)</div>
+          <div class="dimmed" style="margin-top:auto">main · opus<br>project-historian · sonnet · 3 tool uses</div>
+        </div>
+      </div>
+      <div class="col sel">
+        <div class="hd"><span class="n">project-historian</span><span class="c">sonnet · 9.8k</span></div>
+        <div class="bd">
+          <div class="u">&gt; Find out why checkout rounds delivery fees up to the next 50p (fees.py:5 cites FIN-212) …</div>
+          <div class="t">tracker - search_issues (MCP)(query: "delivery fee rounding")</div>
+          <div class="t">tracker - get_issue (MCP)(id: "FIN-212")</div>
+          <div class="t">wiki - get_page (MCP)(id: "ADR-014")</div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="hd"><span class="n" style="color:#57cdbb">project-historian</span><span class="c">WIKI · ADR-014</span></div>
+        <div class="issue">
+          <div class="k">Engineering › Decisions</div>
+          <div class="ttl">ADR-014: Round delivery fees to 50p</div>
+          <div><span class="chip">Accepted</span><span class="k">June 2024</span></div>
+          <div>Paylink settles card payments in 50p units. Fees in whole pence don't reconcile, which costs Finance Ops about two days a month.</div>
+          <div>We round every delivery fee up to the next 50p before charging.</div>
+          <div class="hl">Revisit if we move off Paylink.</div>
+        </div>
+        <div class="note">The decision record gives a reason, and says when it would stop applying.</div>
+      </div>
+    </div>
+  </div>
+  <p class="cap">A rough mock. The real page would match the Research explainer's style. The note text here is a placeholder for yours.</p>
+</section>
+
+<section>
+  <h2>The made-up sources</h2>
+  <p class="read">Four sources, each written to be read in a few seconds on screen. Together they give a small twist: the reason was real, but it stopped applying in March.</p>
+  <div class="cards">
+    <div class="card">
+      <div class="top"><span>tracker · FIN-212</span><span class="chip">Done · Jun 2024</span></div>
+      <div class="ttl">Delivery fees don't reconcile with Paylink settlements</div>
+      <p>Paylink settles in 50p units, so every delivery fee in whole pence leaves a difference. Finance Ops spends about two days a month matching them by hand.</p>
+      <p class="hl">Fix: round fees up to the next 50p at checkout. See ADR-014.</p>
+    </div>
+    <div class="card">
+      <div class="top"><span>wiki · ADR-014</span><span class="chip">Accepted</span></div>
+      <div class="ttl">Round delivery fees to 50p</div>
+      <p>Context: Paylink's 50p settlement units. Decision: round every delivery fee up to the next 50p. Consequence: customers pay up to 49p more.</p>
+      <p class="hl">Revisit if we move off Paylink.</p>
+    </div>
+    <div class="card">
+      <div class="top"><span>tracker · PAY-301</span><span class="chip">Done · 14 Mar 2026</span></div>
+      <div class="ttl">Move card payments from Paylink to Coinbridge</div>
+      <p>All card payments go through Coinbridge from 14 March. The Paylink client is removed in payments-service v4.0.</p>
+      <p class="hl">Coinbridge settles each payment to the penny.</p>
+    </div>
+    <div class="card">
+      <div class="top"><span>repo · ~/fernway/payments-service</span><span class="chip">grep -rni paylink</span></div>
+<pre style="font-size:12px"><code>CHANGELOG.md:12:## 4.0.0 (2026-03-14)
+CHANGELOG.md:13:- Removed the Paylink client (PAY-301).</code></pre>
+      <p>No Paylink code left, only the changelog line.</p>
+    </div>
+  </div>
+  <div class="card read">
+    <div class="top"><span>checkout/fees.py</span></div>
+<pre style="font-size:12px"><code>from decimal import Decimal, ROUND_UP
+
+def delivery_fee(distance_km: Decimal) -> Decimal:
+    fee = Decimal("1.99") + Decimal("0.35") * distance_km
+    # Round up to the next 50p (FIN-212)
+    return (fee * 2).quantize(Decimal("1"), rounding=ROUND_UP) / 2</code></pre>
+  </div>
+</section>
+
+<section class="read">
+  <h2>The report and the reply</h2>
+  <p>The subagent's report, sent back to the main agent:</p>
+<pre><code>Why delivery fees round up to 50p
+
+Reason: Paylink settled card payments in 50p units,
+so fees in whole pence didn't reconcile (FIN-212).
+ADR-014 made the rounding the fix, and says
+"Revisit if we move off Paylink."
+
+Does it still hold? No. PAY-301 moved card payments
+to Coinbridge on 14 Mar 2026, and Coinbridge settles
+to the penny. payments-service has had no Paylink
+code since v4.0.0 (CHANGELOG.md:13).
+
+Who to ask: Finance Ops raised FIN-212. Their
+reconciliation reports may still expect 50p steps.</code></pre>
+  <p>The main agent then tells the developer the rounding is safe to drop as far as payments go, suggests checking with Finance Ops first, and offers to remove it and update the tests.</p>
+</section>
+
+<section>
+  <h2>Steps</h2>
+  <div class="tablewrap">
+  <table class="steps">
+    <thead><tr><th>#</th><th>Who</th><th>What happens</th><th>Right panel</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td class="who-main">—</td><td>The custom subagent is a file in the repo</td><td>the agent file, frontmatter highlighted</td></tr>
+      <tr><td>1</td><td class="who-main">Developer</td><td>Types the question (doesn't name the subagent)</td><td>agent file</td></tr>
+      <tr><td>2</td><td class="who-main">Main</td><td>Greps the fee code, sees FIN-212</td><td><code>fees.py</code>, the comment highlighted</td></tr>
+      <tr><td>3</td><td class="who-main">Main</td><td>Picks project-historian by its description and calls it</td><td>the Agent call, <code>subagent_type</code> and full prompt</td></tr>
+      <tr><td>4</td><td class="who-sub">Historian</td><td>Starts with its own system prompt and the task, on Sonnet</td><td>agent file, body highlighted</td></tr>
+      <tr><td>5</td><td class="who-sub">Historian</td><td>Searches the tracker, reads FIN-212</td><td>issue FIN-212</td></tr>
+      <tr><td>6</td><td class="who-sub">Historian</td><td>Reads the decision record</td><td>wiki ADR-014, "Revisit…" highlighted</td></tr>
+      <tr><td>7</td><td class="who-sub">Historian</td><td>Searches the tracker for Paylink</td><td>issue PAY-301</td></tr>
+      <tr><td>8</td><td class="who-sub">Historian</td><td>Greps the payments repo</td><td>grep output</td></tr>
+      <tr><td>9</td><td class="who-sub">Historian</td><td>Reports back</td><td>the full report</td></tr>
+      <tr><td>10</td><td class="who-main">Main</td><td>Answers the developer</td><td>the reply</td></tr>
+      <tr><td>11</td><td class="who-main">—</td><td>Contexts and cost: main agent small, subagent larger, on a cheaper model</td><td>the reply</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="read">
+  <h2>What's real and what isn't</h2>
+  <p>Made up: the company, the code, the issues, the wiki page, the repo, the report and the reply. The token counts and costs would be plausible figures, not measured ones, and SOURCES.md would say so.</p>
+  <p>Kept true to Claude Code: the agent file's format and fields, how the main agent picks a subagent by its description, the shape of the Agent call, and how MCP tools are named and scoped. Checked against the subagent docs: an <code>mcpServers</code> entry can be a name, which shares the main session's connection (so the main agent has that server too), or an inline definition, which is connected when the subagent starts and disconnected when it finishes. The story uses inline definitions so the main agent really can't reach the tracker or wiki. One thing the docs don't settle: whether inline servers' tools still need listing in <code>tools</code>. Listing them is safe either way, so the file does.</p>
+  <p>Not yet checked against the real TUI: how MCP tool calls are displayed (the mock guesses <code>tracker - search_issues (MCP)(…)</code>). A quick look at a real session would settle it, without a full run.</p>
+</section>
+
+<section class="read">
+  <h2>Questions for you</h2>
+  <ol class="qs">
+    <li><b>Is the twist worth it?</b>The reason turns out to be out of date. That makes the answer worth having, but adds two steps (#7, #8). Without it the story ends at the decision record, in 9 steps.</li>
+    <li><b>Sonnet or Haiku for the subagent?</b>Research already showed Haiku. Sonnet is a more realistic pick for reading and weighing sources.</li>
+    <li><b>Show the developer not naming the subagent?</b>The point being that the description does the routing. The alternative is "use project-historian to…", which is simpler but hides that.</li>
+    <li><b>How do the tracker and wiki look on the right?</b>Drawn as simple issue and wiki cards (as in the mock), or as raw MCP tool output (JSON-ish text). Cards read faster; raw output is closer to what the agent sees.</li>
+  </ol>
+</section>
+
+</div>

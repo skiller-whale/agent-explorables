@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subagents explainer: Fan out</title>
+<link rel="stylesheet" href="../specs-and-plans/conversation.css">
+<link rel="stylesheet" href="../hooks/harness.css">
+<link rel="stylesheet" href="agents.css">
+<style>
+#agents .row { grid-template-columns: 16px 150px 44px 1fr; }
+#agents .row .nm, #subs .ahead .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <h1>Subagents explainer: <span>Fan out</span></h1>
+    <div id="acts"><div class="act now"><div class="dots" id="dots"></div></div></div>
+    <div id="cost" aria-label="Session cost"></div>
+  </header>
+  <div id="main" class="agents">
+    <section class="panel" id="cc" aria-label="The main agent">
+      <div class="ahead" id="mainhead"></div>
+      <div id="mainterm" class="term" aria-live="polite"></div>
+      <div id="input"></div>
+      <div id="agents" aria-label="Agents"></div>
+    </section>
+    <section id="subs" aria-label="The subagents"></section>
+    <section class="panel" id="view" aria-label="What the agent is looking at"></section>
+  </div>
+  <nav>
+    <button id="back" title="Back (←)" aria-label="Back">←</button>
+    <button id="next" title="Next (→)" aria-label="Next">→</button>
+    <span id="where"></span>
+  </nav>
+  <div id="bubble" role="button" tabindex="0" hidden></div>
+</div></div>
+
+<script type="module" src="fan-out.js"></script>
+</body>
+</html>

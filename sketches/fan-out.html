@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch: subagents fan out</title>
+<!-- A rough, static screen for the second subagents explainer: one moment from
+     recordings/subagents/fan-out/opus-5-5/run-1, the three reviews running at once.
+     Not production: no engine, no steps. -->
+<link rel="stylesheet" href="../modules/specs-and-plans/conversation.css">
+<link rel="stylesheet" href="../modules/hooks/harness.css">
+<link rel="stylesheet" href="../modules/subagents/agents.css">
+<style>
+  #main.agents { grid-template-columns: 390px 400px 1fr; }
+  #subs { display: flex; flex-direction: column; gap: 8px; min-height: 0; background: none; border: 0; padding: 0; }
+  #subs .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  #subs .panel .ahead .who { color: var(--sub); }
+  #subs .panel.selected { border-color: color-mix(in srgb, var(--sub) 45%, var(--line)); }
+  #subs .term { padding: 8px 12px; font-size: 12px; }
+  #agents .row { grid-template-columns: 16px 150px 50px 1fr; }
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <h1>Subagents explainer: <span>Fan out</span></h1>
+    <div id="acts"><div class="act now"><div class="dots"></div></div></div>
+    <div id="cost"></div>
+  </header>
+  <div id="main" class="agents">
+    <section class="panel" id="cc">
+      <div class="ahead"><span class="who">Main agent</span><span class="model">opus</span><span class="ctx">context <b>13.1k</b> tokens</span></div>
+      <div class="term">
+        <div class="ln user">/review-changes</div>
+        <div class="ln say">I'll launch the three reviews in parallel.</div>
+        <div class="ln tool spin">Agent(Correctness review of branch)</div>
+        <div class="ln tool spin">Agent(Security review of branch)</div>
+        <div class="ln tool spin">Agent(Performance review of branch)</div>
+      </div>
+      <div id="agents">
+        <div class="row"><span class="g">●</span><span class="nm">main</span><span class="md">opus</span><span class="st"></span></div>
+        <div class="row running"><span class="g">◌</span><span class="nm">Correctness review</span><span class="md">opus</span><span class="st">1 tool use</span></div>
+        <div class="row running"><span class="g">◌</span><span class="nm">Security review</span><span class="md">opus</span><span class="st">2 tool uses</span></div>
+        <div class="row running sel"><span class="g">◌</span><span class="nm">Performance review</span><span class="md">opus</span><span class="st">2 tool uses</span></div>
+      </div>
+    </section>
+    <section id="subs">
+      <div class="panel">
+        <div class="ahead"><span class="who">Correctness review</span><span class="model">opus</span><span class="ctx">context <b>19.2k</b> tokens</span></div>
+        <div class="term">
+          <div class="ln tool">Bash(git diff main...HEAD && git ls-files)</div>
+          <div class="ln tool spin">Bash(sed -n 95,225p app/models.py && …)</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ahead"><span class="who">Security review</span><span class="model">opus</span><span class="ctx">context <b>24.0k</b> tokens</span></div>
+        <div class="term">
+          <div class="ln tool">Bash(git diff main...HEAD && git ls-files)</div>
+          <div class="ln tool">Bash(sed -n 1,60p app/__init__.py; sed -n 95,130p app/models.py; …)</div>
+          <div class="ln tool spin">Bash(grep -rn "safe\|about_me\|Markup" app/templates …)</div>
+        </div>
+      </div>
+      <div class="panel selected">
+        <div class="ahead"><span class="who">Performance review</span><span class="model">opus</span><span class="ctx">context <b>19.4k</b> tokens</span></div>
+        <div class="term">
+          <div class="ln tool">Bash(git diff main...HEAD --stat && git diff main...HEAD && …)</div>
+          <div class="ln tool spin">Bash(grep -n "" app/models.py | sed -n 85,230p; …)</div>
+        </div>
+      </div>
+    </section>
+    <section class="panel" id="view">
+      <div class="vh"><span class="whose">Performance review</span><span class="kind">File</span><span class="where">app/models.py</span></div>
+      <pre class="vbody code"><span class="line">    def posts_count(self):</span><span class="line">        query = sa.select(sa.func.count()).select_from(</span><span class="line">            self.posts.select().subquery())</span><span class="line">        return db.session.scalar(query)</span><span class="line"> </span><span class="line">    def to_dict(self, include_email=False):</span><span class="line">        data = {</span><span class="line">            'id': self.id,</span><span class="line">            'username': self.username,</span><span class="line">            'last_seen': self.last_seen.replace(</span><span class="line">                tzinfo=timezone.utc).isoformat(),</span><span class="line">            'about_me': self.about_me,</span><span class="line hl">            'post_count': self.posts_count(),</span><span class="line hl">            'follower_count': self.followers_count(),</span><span class="line hl">            'following_count': self.following_count(),</span><span class="line">            '_links': {</span><span class="line">                'self': url_for('api.get_user', id=self.id),</span><span class="line">                'followers': url_for('api.get_followers', id=self.id),</span><span class="line">                'following': url_for('api.get_following', id=self.id),</span><span class="line">                'avatar': self.avatar(128)</span><span class="line">            }</span><span class="line">        }</span></pre>
+    </section>
+  </div>
+  <nav><button>←</button><button>→</button><span id="where">Three reviews at once</span></nav>
+</div></div>
+</body>
+</html>
