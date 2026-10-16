@@ -9,3 +9,5 @@ modules/specs-and-plans/openspec.html
 modules/subagents/research.html
 modules/subagents/fan-out.html
 modules/subagents/custom.html
+modules/productivity/meeting-agent.html
+modules/productivity/task-mapping-skill.html

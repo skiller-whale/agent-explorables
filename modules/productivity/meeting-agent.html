@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent explainer: Task mapping</title>
+<link rel="stylesheet" href="meeting-agent.css">
+</head>
+<body>
+<div id="app">
+<header>
+  <h1>Agent explainer: <span>Task mapping</span></h1>
+  <div id="dots" aria-label="Steps"></div>
+</header>
+<div id="stage" aria-live="polite"></div>
+<nav>
+  <button id="back" title="Back (←)" aria-label="Back">←</button>
+  <button id="next" title="Next (→)" aria-label="Next">→</button>
+  <span id="where"></span>
+  <button id="restart" hidden>Restart</button>
+</nav>
+</div>
+<script type="module" src="meeting-agent.js"></script>
+</body>
+</html>
