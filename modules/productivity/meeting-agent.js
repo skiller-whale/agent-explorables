@@ -4,9 +4,11 @@
 const W = 1040, H = 560;
 const C = { ink: "#1d1d1d", muted: "#5f6870", blue: "#4ba1f1", amber: "#f1ac4b", coral: "#f39a6b", border: "#d3d8dd", wire: "#c9ced3", pill: "#f1f3f5", pillOn: "#ddedfa", white: "#ffffff", guideHl: "#fbe6c4" };
 // Faded fill and edge for each kind of box.
+/** @type {Record<string, [string, string]>} */
 const TINT = { guidance: ["#fdf4e4", "#ecd3a8"], info: ["#eaf3fc", "#b9d7f2"], actions: ["#e9f6ee", "#b5dcc5"] };
 // A wrench, drawn on a 12x12 grid.
 const WRENCH = `<path d="M7.6 1.2a3.2 3.2 0 0 0-3.3 4.3L1 8.8a1.3 1.3 0 0 0 1.9 1.9l3.3-3.3a3.2 3.2 0 0 0 4.3-3.3L8.7 5.9 7 5.6 6.7 3.9z"/>`;
+/** @type {Record<string, [string, string, string]>} */
 const PEOPLE = { P: ["Priya", "var(--priya)", "var(--priya-edge)"], T: ["Tom", "var(--tom)", "var(--tom-edge)"], S: ["Sam", "var(--sam)", "var(--sam-edge)"] };
 
 /** @type {Record<string, string>} */
