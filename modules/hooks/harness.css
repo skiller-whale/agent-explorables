@@ -85,7 +85,7 @@
 #bubble { position: absolute; z-index: 10; max-width: 300px; background: var(--callout); color: var(--callout-ink);
           border-radius: 8px; padding: 11px 14px; font-size: 15px; line-height: 1.45; box-shadow: 0 8px 24px #0009;
           transition: opacity .2s; }
-#bubble[hidden] { display: block; opacity: 0; pointer-events: none; }
+#bubble[hidden], #bubble.folded[hidden] { display: block; opacity: 0; pointer-events: none; } /* folded too: .folded's opacity would win otherwise */
 #bubble:has(pre) { max-width: 440px; }
 #bubble p { margin: 0; } #bubble p + p, #bubble pre { margin-top: 8px; }
 #bubble code { font: 13px var(--mono); background: #0000000f; padding: 0 3px; border-radius: 3px; }
