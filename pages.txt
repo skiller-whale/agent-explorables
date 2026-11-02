@@ -11,3 +11,4 @@ modules/subagents/fan-out.html
 modules/subagents/custom.html
 modules/productivity/meeting-agent.html
 modules/productivity/task-mapping-skill.html
+modules/productivity/interview-first.html

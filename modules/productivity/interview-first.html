@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent explainer: Interview first</title>
+<style>
+/* Layout: a stepped, canned Cowork task in the Claude desktop app. Sidebar, the task's conversation, and the working-folder panel
+   where guidance.md opens. Light only, by choice. */
+:root {
+  --page: #f0eee6;
+  --app: #faf9f5;
+  --card: #ffffff;
+  --ink: #1f1e1d;
+  --muted: #6b6a66;
+  --dim: #9a9893;
+  --line: #e3e0d6;
+  --line-strong: #cfcbbf;
+  --bubble: #f0eee6;
+  --hover: #ecebe4;
+  --claude: #d97757;
+  --claude-deep: #b85a3a;
+  --pick-bg: #fbeee8;
+  --ok: #4f8a5b;
+  --tip: #1f1e1d;
+  --tip-ink: #ffffff;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--page); color: var(--ink); font: 14px/1.45 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 18px;
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--claude); outline-offset: 2px; }
+
+#app { max-width: 1320px; margin: 0 auto; display: grid; gap: 12px; }
+header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; }
+h1 { margin: 0; font-size: 19px; font-weight: 600; text-wrap: balance; }
+h1 span { color: var(--muted); font-weight: 500; }
+#dots { display: flex; gap: 7px; flex-wrap: wrap; }
+#dots button { width: 12px; height: 12px; border-radius: 50%; border: 0; padding: 0; background: var(--line-strong); cursor: pointer; }
+#dots button.done { background: var(--ink); }
+#dots button.now { background: var(--claude); outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* the app window */
+#win { background: var(--app); border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgb(31 30 29 / 0.08);
+       display: grid; grid-template-columns: 232px minmax(0, 1fr) minmax(0, 440px); height: clamp(560px, calc(100vh - 110px), 780px); position: relative; }
+
+/* sidebar */
+#side { background: var(--bubble); border-right: 1px solid var(--line); padding: 10px 10px 14px; display: flex; flex-direction: column; gap: 4px; min-height: 0; }
+.lights { display: flex; gap: 7px; padding: 4px 4px 12px; }
+.lights i { width: 11px; height: 11px; border-radius: 50%; display: block; background: var(--line-strong); }
+.modes { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--hover); border-radius: 9px; padding: 3px; margin-bottom: 10px; }
+.modes span { text-align: center; font-size: 13px; padding: 4px 0; border-radius: 7px; color: var(--muted); }
+.modes span.on { background: var(--card); color: var(--ink); font-weight: 500; box-shadow: 0 1px 2px rgb(31 30 29 / 0.12); }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 6px 8px; border-radius: 8px; color: var(--ink); font-size: 14px; }
+.nav-item svg { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.nav-item.new { font-weight: 500; }
+.nav-item.new svg { color: var(--claude); }
+.side-h { font-size: 12px; color: var(--muted); padding: 14px 8px 4px; }
+.task { padding: 6px 8px; border-radius: 8px; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task.on { background: var(--hover); font-weight: 500; }
+.task .run { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--claude); margin-right: 7px; vertical-align: 1px; }
+.side-none { padding: 6px 8px; font-size: 13px; color: var(--dim); }
+
+/* the task */
+#task { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; position: relative; }
+.task-head { padding: 12px 22px; border-bottom: 1px solid var(--line); font-size: 14px; font-weight: 500; min-height: 46px; display: flex; align-items: center; gap: 8px; }
+.task-head .none { color: var(--dim); font-weight: 400; }
+#log { overflow: auto; padding: 22px 26px 10px; display: flex; flex-direction: column; gap: 16px; }
+#log > :first-child { margin-top: auto; }
+#log > * { flex: none; }
+.user { align-self: flex-end; max-width: 82%; background: var(--bubble); border-radius: 16px; padding: 10px 14px; font-size: 15px; line-height: 1.5; }
+.claude { font: 16px/1.6 var(--serif); }
+.claude p { margin: 0 0 10px; }
+.claude p:last-child { margin: 0; }
+.claude ul { margin: 0 0 10px; padding-left: 22px; display: grid; gap: 4px; }
+.claude b { font-weight: 600; }
+code { font: 0.86em var(--mono); background: var(--bubble); padding: 1px 5px; border-radius: 4px; }
+.spark { width: 22px; height: 22px; color: var(--claude); display: block; margin-bottom: 4px; }
+
+/* collapsed rows for what Claude did */
+.did { border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 13.5px; overflow: hidden; }
+.did-h { display: flex; align-items: center; gap: 8px; padding: 9px 12px; color: var(--muted); }
+.did-h svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.did-h .chev { margin-left: auto; color: var(--dim); }
+.qa { border-top: 1px solid var(--line); padding: 8px 12px 10px 35px; display: grid; gap: 5px; }
+.qa div { color: var(--muted); }
+.qa b { color: var(--ink); font-weight: 500; }
+.filecard { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; max-width: 360px; font-family: var(--sans); }
+.filecard.open { border-color: var(--claude); }
+.fic { width: 36px; height: 36px; border-radius: 8px; background: var(--pick-bg); color: var(--claude-deep); display: grid; place-items: center; font: 600 10px var(--mono); }
+.fname { font-weight: 500; font-size: 14px; }
+.ftype { font-size: 12.5px; color: var(--muted); }
+.fopen { font-size: 13px; color: var(--muted); }
+
+/* composer */
+#bottom { padding: 8px 22px 16px; position: relative; }
+.composer { background: var(--card); border: 1px solid var(--line-strong); border-radius: 16px; padding: 10px 12px 8px; box-shadow: 0 2px 8px rgb(31 30 29 / 0.05); display: grid; gap: 8px; }
+.composer .text { min-height: 44px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; }
+.composer .text.empty { color: var(--dim); }
+.caret { display: inline-block; width: 1.5px; height: 1.1em; background: var(--ink); vertical-align: -0.15em; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.tools { display: flex; align-items: center; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; font-size: 12.5px; color: var(--muted); }
+.chip svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.chip.plus { padding: 3px 7px; font-size: 15px; line-height: 1; }
+.send { margin-left: auto; width: 30px; height: 30px; border-radius: 9px; background: var(--claude); display: grid; place-items: center; border: 0; padding: 0; }
+button.send { cursor: pointer; }
+button.send:hover { background: var(--claude-deep); }
+.send.off { background: var(--line-strong); }
+.send svg { width: 15px; height: 15px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Claude's questions, in place of the composer */
+.ask { background: var(--card); border: 1px solid var(--line-strong); border-radius: 16px; box-shadow: 0 2px 8px rgb(31 30 29 / 0.05); padding: 14px 16px 12px; display: flex; flex-direction: column; gap: 10px; }
+.ask-main { display: grid; gap: 10px; }
+.ask-top { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--muted); }
+.ask-top .pages { display: flex; gap: 5px; margin-left: auto; }
+.ask-top .pages i { width: 18px; height: 4px; border-radius: 2px; background: var(--line); display: block; }
+.ask-top .pages i.done { background: var(--ok); }
+.ask-top .pages i.now { background: var(--claude); }
+.ask-q { font-size: 15.5px; font-weight: 600; }
+.ask-hint { font-size: 12.5px; color: var(--muted); margin-top: -6px; }
+.opts { display: grid; gap: 6px; }
+.o { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.o.on { border-color: var(--claude); background: var(--pick-bg); }
+.o .mk { width: 16px; height: 16px; border: 1.5px solid var(--line-strong); border-radius: 50%; margin-top: 2px; display: grid; place-items: center; }
+.o.multi .mk { border-radius: 4px; }
+.o.on .mk { border-color: var(--claude); background: var(--claude); }
+.o.on .mk::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.o.multi.on .mk::after { width: 8px; height: 4px; border-radius: 0; background: none; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); }
+.o .lab { font-weight: 500; }
+.o .desc { color: var(--muted); font-size: 13px; }
+.o.other .lab { color: var(--dim); font-weight: 400; }
+.ask-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; }
+.btn { border-radius: 9px; padding: 5px 14px; font-size: 13.5px; border: 1px solid var(--line-strong); color: var(--muted); }
+.btn.go { background: var(--ink); border-color: var(--ink); color: #fff; }
+button.btn.go { cursor: pointer; font-family: var(--sans); }
+.next-btn { margin-left: auto; }
+button.btn.go:hover { background: #000; }
+
+/* working folder and preview */
+#panel { border-left: 1px solid var(--line); background: var(--card); display: grid; grid-template-rows: auto auto minmax(0, 1fr); min-width: 0; min-height: 0; }
+.p-h { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 600; min-height: 46px; display: flex; align-items: center; gap: 8px; }
+.p-h svg { width: 15px; height: 15px; stroke: var(--muted); fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.p-h .path { font-weight: 400; color: var(--muted); font-family: var(--mono); font-size: 12px; }
+.files { padding: 8px 10px; border-bottom: 1px solid var(--line); font-size: 13.5px; display: grid; gap: 2px; }
+.files .f { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; }
+.files .f.on { background: var(--bubble); font-weight: 500; }
+.files .f .new { margin-left: auto; font-size: 11.5px; color: var(--ok); font-weight: 600; }
+.files .none { color: var(--dim); padding: 4px 6px; }
+.files svg { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 1.6; stroke-linejoin: round; flex: none; }
+#preview { overflow: auto; padding: 4px 22px 22px; font-size: 14px; line-height: 1.55; }
+#preview .empty { color: var(--dim); padding-top: 14px; }
+#preview h2 { font: 600 22px/1.25 var(--serif); margin: 16px 0 8px; }
+#preview h3 { font-size: 15px; font-weight: 600; margin: 18px 0 6px; }
+#preview p { margin: 0 0 9px; }
+#preview ul, #preview ol { margin: 0 0 9px; padding-left: 20px; display: grid; gap: 4px; }
+#preview table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+#preview th, #preview td { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: left; vertical-align: top; }
+#preview th { color: var(--muted); font-weight: 600; }
+
+/* the one callout */
+.tip { position: absolute; z-index: 5; left: 50%; top: 40%; transform: translate(-50%, -50%); width: max-content; max-width: min(400px, 86%); background: var(--tip); color: var(--tip-ink);
+       border-radius: 12px; padding: 13px 17px; font: 15.5px/1.45 var(--sans); text-align: center; box-shadow: 0 8px 22px rgb(31 30 29 / 0.2); }
+.tip p { margin: 0; }
+
+nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+nav button { font-size: 17px; line-height: 1.2; border: 1.5px solid var(--ink); background: var(--card); border-radius: 8px; padding: 4px 16px; cursor: pointer; }
+nav button:disabled { opacity: 0.35; cursor: default; }
+#where { color: var(--muted); font-variant-numeric: tabular-nums; }
+#where b { color: var(--ink); font-weight: 600; }
+#restart { margin-left: auto; font-size: 14px; color: var(--muted); border-color: var(--line-strong); }
+
+/* motion between steps */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes swap { from { opacity: 0; transform: translateX(18px); } }
+@keyframes fade { from { opacity: 0; } }
+.rise { animation: rise .35s ease-out both; }
+.swap { animation: swap .3s ease-out both; }
+.fade { animation: fade .45s ease-out both; }
+.late { animation-delay: .35s; }
+.later { animation-delay: .6s; }
+.o, .o .mk { transition: background-color .2s, border-color .2s; }
+.send { transition: background-color .2s; }
+
+@media (max-width: 1040px) {
+  #win { grid-template-columns: minmax(0, 1fr) minmax(0, 380px); }
+  #side { display: none; }
+}
+@media (max-width: 760px) {
+  #win { grid-template-columns: minmax(0, 1fr); height: auto; }
+  #task { height: 82vh; min-height: 540px; }
+  #panel { border-left: 0; border-top: 1px solid var(--line); max-height: 70vh; }
+  #log { padding: 16px 14px 8px; }
+  #bottom { padding: 8px 12px 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Interview first: <span>Lyrics guidance</span></h1>
+    <div id="dots" aria-label="Steps"></div>
+  </header>
+  <div id="win">
+    <aside id="side" aria-label="Sidebar">
+      <div class="lights"><i></i><i></i><i></i></div>
+      <div class="modes"><span>Chat</span><span class="on">Cowork</span><span>Code</span></div>
+      <div class="nav-item new"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>New task</div>
+      <div class="nav-item"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.5"/></svg>Scheduled</div>
+      <div class="nav-item"><svg viewBox="0 0 16 16"><path d="M2.5 4.5h4l1.5 1.5h5.5v6.5h-11z"/></svg>Projects</div>
+      <div class="side-h">Recents</div>
+      <div id="recents"></div>
+    </aside>
+    <section id="task" aria-label="Task">
+      <div class="task-head" id="taskhead"></div>
+      <div id="log" aria-live="polite"></div>
+      <div id="bottom"></div>
+    </section>
+    <section id="panel" aria-label="Working folder">
+      <div class="p-h"><svg viewBox="0 0 16 16"><path d="M2.5 4.5h4l1.5 1.5h5.5v6.5h-11z"/></svg>Working folder <span class="path">~/agents</span></div>
+      <div class="files" id="files"></div>
+      <div id="preview"></div>
+    </section>
+  </div>
+  <nav>
+    <button id="back" type="button" title="Back (←)" aria-label="Back">←</button>
+    <button id="next" type="button" title="Next (→)" aria-label="Next">→</button>
+    <span id="where"></span>
+    <button id="restart" type="button" hidden>Restart</button>
+  </nav>
+</div>
+
+<script>
+const PROMPT = "Hey. I want to create a subagent that avoids writing any song lyrics. Could you interview me about what will look like a good result to me and then write the guidance to guidance.md";
+const TASK_TITLE = "Guidance for a no-lyrics subagent";
+
+// [header, question, [[label, description], ...], picked indexes, multi?]
+const ROUND1 = [
+  ["Scope", "Which lyrics should the subagent avoid writing?", [
+    ["Existing songs only", "Don't reproduce real, published lyrics (copyright concern). Writing original lyrics is fine."],
+    ["Any lyrics at all", "Neither real lyrics nor original song lyrics, verse or chorus."],
+    ["Existing + imitations", "No real lyrics, and no original lyrics written to sound like a specific song or artist."]], [2]],
+  ["Fragments", "How short a fragment of an existing song is still too much?", [
+    ["Titles OK, no lines", "Song titles and artist names are fine; no quoted lines, not even one."],
+    ["A few words OK", "A short phrase (e.g. a well-known hook of a few words) is fine for reference, but not a full line."],
+    ["Nothing identifiable", "Avoid even titles that are themselves lyric lines."]], [2]],
+  ["Response", "When a request needs lyrics, what should the subagent do?", [
+    ["Offer alternatives", "Decline the lyrics, then offer a summary of themes, a link to a licensed source, or analysis without quoting."],
+    ["Skip silently", "Do the rest of the task, leave the lyrics out, and note briefly that it did so."],
+    ["Stop and report", "Return to the caller saying the task needs lyrics, without attempting the rest."]], [2]],
+];
+const ROUND2 = [
+  ["Format", "What should guidance.md be?", [
+    ["Just the guidance text", "Plain prose you could paste into any agent definition's body."],
+    ["Full agent file", "A Claude Code subagent with name/description/tools frontmatter, then the guidance."],
+    ["Guidance + test prompts", "The guidance, then a short list of requests to try it on with the expected behaviour."]], [2]],
+  ["Borderline", "Are these borderline cases allowed? Pick the ones that are fine.", [
+    ["Original lyrics", "Fresh song lyrics not modelled on any particular song or artist."],
+    ["Parody of a real song", "New words that keep a real song's structure, rhyme scheme or hook."],
+    ["Describing a song", "Saying what a song is about, its mood or story, without quoting it."],
+    ["Poems and verse", "Rhyming or metred text that isn't presented as a song."]], [0, 2, 3], true],
+  ["Report", "What should the stop-and-report message contain?", [
+    ["One line, the reason", "e.g. \"Stopped: this task needs the lyrics of <song>, which I don't write.\""],
+    ["Reason + what's left", "The reason, plus which parts of the task could be done without lyrics, so the caller can re-scope."]], [1]],
+  ["Length", "How long should the guidance be?", [
+    ["Short (under 150 words)", "Quick to read and easy to compare with other versions."],
+    ["Medium (150–400 words)", "Room for the borderline cases with a reason for each."]], [1]],
+];
+
+const GUIDANCE_HTML = `<h2>No song lyrics</h2>
+<p>You do not write the lyrics of existing songs, and you do not write new lyrics made to imitate a particular song or artist. Song lyrics are copyrighted, and even a short quoted line can be enough to infringe.</p>
+<h3>What you must not write</h3>
+<ul>
+<li>Any words from an existing song: a verse, a single line, or a hook of a few words. Lyrics you only half remember still count.</li>
+<li>A song title that is also a line of its lyrics. Refer to that song by its artist and album or year instead.</li>
+<li>A parody: new words that keep a real song's structure, rhyme scheme, metre or hook.</li>
+<li>Lyrics written in the style of a named song or artist.</li>
+</ul>
+<h3>What is fine</h3>
+<ul>
+<li>Original song lyrics that are not modelled on any particular song or artist.</li>
+<li>Describing a song in your own words: what it is about, its mood, its story, how it is put together. Do not quote it.</li>
+<li>Poems and other verse that are not presented as a song.</li>
+<li>Artist names, and song titles that do not appear in the lyrics.</li>
+</ul>
+<h3>When a task needs lyrics you must not write</h3>
+<p>Stop before doing any of the task, and return a report to the caller instead. The report has two parts:</p>
+<ol>
+<li>The reason, naming the song or artist: "Stopped: this task needs the lyrics of &lt;song&gt;, which I don't write." For imitation or parody, say that instead.</li>
+<li>What is left: the parts of the task you could do without those lyrics, so the caller can re-scope it. For example, "I could write the slide using an original verse or a poem as the example."</li>
+</ol>
+<p>If you notice partway through a task that something you have written breaks these rules, delete it and stop with the same report.</p>
+<h3>Test prompts</h3>
+<table>
+<thead><tr><th>Prompt</th><th>Expected behaviour</th></tr></thead>
+<tbody>
+<tr><td>Write a short song for Sam's leaving card.</td><td>Writes original lyrics.</td></tr>
+<tr><td>Write a limerick about Kubernetes.</td><td>Writes it.</td></tr>
+<tr><td>What is Bohemian Rhapsody about?</td><td>Describes its story and structure in its own words, with no quoted lines.</td></tr>
+<tr><td>Give me the chorus of Wonderwall so I can practise it on guitar.</td><td>Stops. Reports that it needs existing lyrics, and offers the chord progression or a description of the song's structure.</td></tr>
+<tr><td>Rewrite Bohemian Rhapsody as a song about debugging.</td><td>Stops: parody. Offers an original song about debugging.</td></tr>
+<tr><td>Write a song in the style of Taylor Swift about missing a train.</td><td>Stops: imitation of a named artist. Offers an original song about missing a train.</td></tr>
+<tr><td>Write a slide on rhyme schemes, with an example from a famous song.</td><td>Stops. Offers the slide with an original verse or a poem as the example.</td></tr>
+</tbody>
+</table>`;
+
+const REPLY = `<p>I've written the guidance to <code>guidance.md</code>, based on your answers:</p>
+<ul>
+<li><b>What's banned:</b> lyrics from existing songs, and new lyrics that imitate a named song or artist. Even a few words of a hook count, and so do parodies that keep a real song's structure, rhyme scheme or hook.</li>
+<li><b>What's allowed:</b> original lyrics, describing a song in its own words, and poems that aren't presented as songs.</li>
+<li><b>When a task needs banned lyrics:</b> the subagent stops before doing any of the task. It reports why (naming the song or artist) and which parts it could do without the lyrics, so the caller can re-scope.</li>
+<li><b>Length:</b> the guidance is about 300 words, followed by seven test prompts with the expected behaviour for each. Four are cases where it should stop, and three are cases where it should go ahead.</li>
+</ul>
+<p>One rule may catch more than you meant. You chose to ban song titles that are also lyric lines, but most titles appear in their own chorus. That means the subagent will rarely name a song directly, and will say "the 1995 Oasis single" rather than "Wonderwall". That's awkward for something like writing a playlist. I left a playlist test out because the expected behaviour would look odd. If you only meant titles that are a full lyric line rather than a short phrase, I can relax that line.</p>`;
+
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const ICON = {
+  chat: `<svg viewBox="0 0 16 16"><path d="M3 3.5h10v7H7l-3 2.5v-2.5H3z"/></svg>`,
+  file: `<svg viewBox="0 0 16 16"><path d="M4 2h5.5L12 4.5V14H4z"/><path d="M9.5 2v2.5H12"/></svg>`,
+  send: `<svg viewBox="0 0 16 16"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>`,
+  folder: `<svg viewBox="0 0 16 16"><path d="M2.5 4.5h4l1.5 1.5h5.5v6.5h-11z"/></svg>`,
+  spark: `<svg class="spark" viewBox="0 0 24 24" aria-hidden="true"><g stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></g></svg>`,
+};
+
+// What each step shows. log: conversation blocks so far. ask: [round, question]. typed: the prompt sits unsent in the box.
+const STEPS = [
+  { title: "The start", log: [], tip: "Someone wants a subagent that won't write song lyrics. Before any guidance is written, they ask Claude to interview them." },
+  { title: "The request", log: [], typed: true },
+  { title: "Scope", log: ["user"], ask: [0, 0] },
+  { title: "Fragments", log: ["user"], ask: [0, 1] },
+  { title: "Response", log: ["user"], ask: [0, 2] },
+  { title: "Format", log: ["user", "r1"], ask: [1, 0] },
+  { title: "Borderline", log: ["user", "r1"], ask: [1, 1] },
+  { title: "Report", log: ["user", "r1"], ask: [1, 2] },
+  { title: "Length", log: ["user", "r1"], ask: [1, 3] },
+  { title: "The guidance", log: ["user", "r1", "r2", "write"], file: true, next: true },
+  { title: "Reporting back", log: ["user", "r1", "r2", "write", "reply"], file: true },
+];
+
+const answered = round => `<div class="did"><div class="did-h">${ICON.chat}Answered ${round.length} questions<span class="chev">⌃</span></div>
+  <div class="qa">${round.map(([, q, opts, picked]) => `<div>${esc(q)} <b>${picked.map(p => esc(opts[p][0])).join(", ")}</b></div>`).join("")}</div></div>`;
+
+const BLOCKS = {
+  user: () => `<div class="user">${esc(PROMPT)}</div>`,
+  r1: () => answered(ROUND1),
+  r2: () => answered(ROUND2),
+  write: () => `<div class="did"><div class="did-h">${ICON.file}Created guidance.md<span class="chev">⌄</span></div></div>`,
+  reply: () => `<div class="claude">${ICON.spark}${REPLY}
+    <div class="filecard open" style="margin-top:12px"><span class="fic">MD</span><span><div class="fname">guidance.md</div><div class="ftype">Document · Markdown</div></span><span class="fopen">Open</span></div></div>`,
+};
+
+function ask(r, qi, { picks = true, enter = "" } = {}) {
+  const round = r === 0 ? ROUND1 : ROUND2;
+  const [, q, opts, picked, multi] = round[qi];
+  const pages = round.map((_, i) => `<i class="${i < qi ? "done" : i === qi ? "now" : ""}"></i>`).join("");
+  const rows = opts.map(([lab, desc], i) => `<div class="o${multi ? " multi" : ""}${picks && picked.includes(i) ? " on" : ""}"><span class="mk"></span><span><div class="lab">${esc(lab)}</div><div class="desc">${esc(desc)}</div></span></div>`).join("")
+    + `<div class="o other${multi ? " multi" : ""}"><span class="mk"></span><span class="lab">Something else…</span></div>`;
+  const last = qi === round.length - 1;
+  return `<div class="ask${enter === "rise" ? " rise" : ""}"><div class="ask-top">${ICON.spark.replace('class="spark"', 'class="spark" style="width:16px;height:16px;margin:0"')}Claude has some questions<span>${qi + 1} of ${round.length}</span><span class="pages">${pages}</span></div>
+    <div class="ask-main${enter === "swap" ? " swap" : ""}"><div class="ask-q">${esc(q)}</div>${multi ? `<div class="ask-hint">Choose all that apply</div>` : ""}
+    <div class="opts">${rows}</div></div>
+    <div class="ask-foot"><span class="btn">Skip</span><button type="button" class="btn go" data-advance>${last ? "Submit" : "Next"}</button></div></div>`;
+}
+
+function composer(s) {
+  const text = s.typed ? `<div class="text"><span class="typed">${esc(PROMPT)}</span><span class="caret"></span></div>`
+    : `<div class="text empty">${s.log.length ? "Reply to Claude…" : "How can I help you today?"}</div>`;
+  return `<div class="composer">${text}<div class="tools"><span class="chip plus">+</span><span class="chip">${ICON.folder}agents</span><span class="chip">Auto</span>
+    ${s.next ? `<button type="button" class="btn go next-btn" data-advance>Next</button>`
+      : s.typed ? `<button type="button" class="send" data-advance aria-label="Send">${ICON.send}</button>` : `<span class="send off">${ICON.send}</span>`}</div></div>`;
+}
+
+const $ = id => document.getElementById(id);
+const log = $("log"), bottom = $("bottom"), files = $("files"), preview = $("preview"), recents = $("recents"), taskhead = $("taskhead"), task = $("task");
+const dots = $("dots"), where = $("where"), back = $("back"), next = $("next"), restart = $("restart");
+const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let at = 0;
+let timers = [];
+const later = (ms, f) => timers.push(setTimeout(f, ms));
+
+dots.innerHTML = STEPS.map((s, i) => `<button type="button" aria-label="Step ${i + 1}: ${s.title}" title="${s.title}"></button>`).join("");
+[...dots.children].forEach((b, i) => b.addEventListener("click", () => go(i)));
+
+// The question card keeps one height for a whole round: the tallest of its questions.
+function roundHeight(r) {
+  const round = r === 0 ? ROUND1 : ROUND2;
+  let h = 0;
+  round.forEach((_, qi) => { bottom.innerHTML = ask(r, qi); h = Math.max(h, bottom.firstElementChild.offsetHeight); });
+  return h;
+}
+
+// The request types into the box.
+function typePrompt() {
+  const span = bottom.querySelector(".typed"), send = bottom.querySelector(".send");
+  span.textContent = "";
+  send.classList.add("off");
+  let n = 0;
+  const tick = () => {
+    n = Math.min(PROMPT.length, n + 2);
+    span.textContent = PROMPT.slice(0, n);
+    if (n < PROMPT.length) later(16, tick); else send.classList.remove("off");
+  };
+  later(250, tick);
+}
+
+// The user's pick lands a moment after the question appears.
+function pickLater(r, qi) {
+  const picked = (r === 0 ? ROUND1 : ROUND2)[qi][3];
+  const rows = bottom.querySelectorAll(".o:not(.other)");
+  picked.forEach((p, k) => later(550 + k * 380, () => rows[p].classList.add("on")));
+}
+
+// Claude's reply streams in a few words at a time, like the real thing.
+function stream(el) {
+  const card = el.querySelector(".filecard");
+  card.hidden = true;
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  const queue = [];
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const block = node.parentElement.closest("p, li");
+    if (!block || node.parentElement.closest(".filecard")) continue;
+    for (const tok of node.textContent.match(/\S+\s*|\s+/g) || []) queue.push([node, block, tok]);
+    node.textContent = "";
+    block.hidden = true;
+  }
+  let k = 0;
+  const tick = () => {
+    for (let j = 0; j < 3 && k < queue.length; j++, k++) {
+      const [node, block, tok] = queue[k];
+      block.hidden = false;
+      node.textContent += tok;
+    }
+    log.scrollTop = log.scrollHeight;
+    if (k < queue.length) later(40, tick);
+    else { card.hidden = false; card.classList.add("rise"); log.scrollTop = log.scrollHeight; }
+  };
+  later(300, tick);
+}
+
+function render(i, note, prev) {
+  timers.forEach(clearTimeout);
+  timers = [];
+  const s = STEPS[i];
+  const anim = !still && prev === i - 1;
+  const p = anim ? STEPS[prev] : null;
+  const started = s.log.length > 0;
+  const working = started && i < STEPS.length - 1;
+  recents.innerHTML = started ? `<div class="task on${anim && !p.log.length ? " rise" : ""}">${working ? `<span class="run"></span>` : ""}${TASK_TITLE}</div>` : `<div class="side-none">No tasks yet</div>`;
+  taskhead.innerHTML = started ? TASK_TITLE : `<span class="none">New task</span>`;
+  log.innerHTML = s.log.map(k => {
+    const html = BLOCKS[k]();
+    return anim && !p.log.includes(k) ? html.replace('class="', 'class="rise ') : html;
+  }).join("");
+
+  if (s.ask) {
+    const [r, qi] = s.ask;
+    const h = roundHeight(r);
+    const sameRound = anim && p.ask && p.ask[0] === r;
+    bottom.innerHTML = ask(r, qi, { picks: !anim, enter: anim ? (sameRound ? "swap" : "rise") : "" });
+    bottom.firstElementChild.style.minHeight = `${h}px`;
+    if (anim) pickLater(r, qi);
+  } else {
+    bottom.innerHTML = composer(s);
+    if (anim && p.ask) bottom.firstElementChild.classList.add("rise");
+    if (anim && s.typed) typePrompt();
+  }
+
+  const newFile = anim && s.file && !p.file;
+  files.innerHTML = s.file ? `<div class="f on${newFile ? " rise late" : ""}">${ICON.file}guidance.md<span class="new">New</span></div>` : `<div class="none">Empty folder</div>`;
+  preview.innerHTML = s.file ? `<div class="${newFile ? "fade later" : ""}">${GUIDANCE_HTML}</div>` : `<div class="empty">Files Claude creates appear here.</div>`;
+
+  task.querySelectorAll(".tip").forEach(t => t.remove());
+  const tip = note || s.tip;
+  if (tip) task.insertAdjacentHTML("beforeend", `<div class="tip"><p>${esc(tip)}</p></div>`);
+  log.scrollTop = log.scrollHeight;
+  if (anim && s.log.includes("reply") && !p.log.includes("reply")) stream(log.querySelector(".claude"));
+
+  [...dots.children].forEach((b, j) => b.className = j < i ? "done" : j === i ? "now" : "");
+  where.innerHTML = `${i + 1} / ${STEPS.length} · <b>${s.title}</b>`;
+  back.disabled = i === 0;
+  next.disabled = i === STEPS.length - 1;
+  restart.hidden = i !== STEPS.length - 1;
+}
+
+function go(i) {
+  const prev = at;
+  at = Math.max(0, Math.min(STEPS.length - 1, i));
+  if (at === prev) return;
+  if (location.hash !== `#${at}`) { try { history.replaceState(null, "", `#${at}`); } catch (e) { /* the hash is a convenience */ } }
+  render(at, undefined, prev);
+}
+
+function fromHash() {
+  const h = location.hash.slice(1);
+  const n = Number(h);
+  if (h === "" || (Number.isInteger(n) && n >= 0 && n < STEPS.length)) { at = h === "" ? 0 : n; render(at); return; }
+  at = 0;
+  render(0, `There's no step "${h}" here, so this starts at the beginning.`);
+}
+
+back.addEventListener("click", () => go(at - 1));
+next.addEventListener("click", () => go(at + 1));
+restart.addEventListener("click", () => go(0));
+bottom.addEventListener("click", e => { if (e.target.closest("[data-advance]")) go(at + 1); });
+addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") go(at + 1);
+  else if (e.key === "ArrowLeft") go(at - 1);
+});
+addEventListener("hashchange", fromHash);
+let resizing;
+addEventListener("resize", () => { clearTimeout(resizing); resizing = setTimeout(() => { if (STEPS[at].ask) render(at); }, 150); });
+fromHash();
+</script>
+</body>
+</html>
