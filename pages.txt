@@ -12,3 +12,5 @@ modules/subagents/custom.html
 modules/productivity/meeting-agent.html
 modules/productivity/task-mapping-skill.html
 modules/productivity/interview-first.html
+modules/memory/agent-memory.html
+modules/memory/false-memories.html

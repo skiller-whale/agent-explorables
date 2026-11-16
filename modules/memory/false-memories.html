@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent memory explainer: False memories</title>
+<link rel="stylesheet" href="../specs-and-plans/conversation.css">
+<link rel="stylesheet" href="../hooks/harness.css">
+<link rel="stylesheet" href="memory.css">
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <header>
+    <h1>Agent memory explainer: <span>False memories</span></h1>
+    <div id="acts"><div class="act now"><div class="dots" id="dots"></div></div></div>
+    <span id="session" hidden></span>
+  </header>
+  <div id="main" class="memory">
+    <section class="panel" id="cc" aria-label="Claude Code">
+      <div class="phead"><span class="who">Claude Code</span></div>
+      <div id="term" class="term" aria-live="polite"></div>
+      <div id="input"></div>
+    </section>
+    <section class="panel" id="ctx" aria-label="The agent's context">
+      <div class="phead"><span class="who">Context</span></div>
+      <div id="ctxbody"></div>
+    </section>
+    <div id="disk">
+      <section class="panel" id="index" aria-label="The memory index"></section>
+      <section class="panel" id="view" aria-label="The memory file"></section>
+    </div>
+  </div>
+  <nav>
+    <button id="back" title="Back (←)" aria-label="Back">←</button>
+    <button id="next" title="Next (→)" aria-label="Next">→</button>
+    <span id="where"></span>
+  </nav>
+  <div id="bubble" role="button" tabindex="0" hidden></div>
+</div></div>
+
+<script type="module" src="false-memories.js"></script>
+</body>
+</html>

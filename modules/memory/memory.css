@@ -1,0 +1,88 @@
+/* The memory explainers: the Claude Code conversation on the left, the agent's context in the middle, and the
+   disk on the right (the repository and the memory folder, then the file being looked at). Builds on the
+   spec-driven and hooks stylesheets, so the pages look alike. */
+:root { --ctx: #7cc4ff; --mem: #c9a2ff; }
+#main.memory { grid-template-columns: 380px 400px 1fr; }
+
+/* the session label in the header */
+#session { margin-left: auto; font: 600 13px var(--mono); color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 2px 10px; background: var(--panel2); }
+
+/* each column's header */
+.phead { display: flex; align-items: baseline; gap: 10px; padding: 9px 14px; border-bottom: 1px solid var(--line); min-height: 40px; }
+.phead .who { font-weight: 600; font-size: 13px; }
+.phead .sub { font: 12px var(--mono); color: var(--muted); }
+
+/* the conversation */
+#cc { display: flex; flex-direction: column; overflow: hidden; }
+#term { flex: 1; min-height: 0; padding: 12px 14px; font: 13px/1.5 var(--mono); overflow: hidden;
+        display: flex; flex-direction: column; justify-content: flex-end; gap: 6px; }
+#term > .ln { flex-shrink: 0; }
+.ln.res { color: var(--muted); padding-left: 18px; }
+.ln.res::before { content: "⎿ "; color: var(--dim); margin-left: -18px; }
+#term > .ln.hl { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); margin: 0 -6px; padding-left: 6px; padding-right: 6px; border-radius: 3px; }
+#input { margin: 0 12px 12px; }
+
+/* the context: blocks in the order the model gets them */
+#ctx { display: flex; flex-direction: column; overflow: hidden; }
+#ctxbody { flex: 1; min-height: 0; overflow: hidden; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+#ctxbody > .none { color: var(--dim); margin: auto; font-size: 13px; }
+.blk { border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); flex-shrink: 0; overflow: hidden; }
+.blk .bh { font: 600 11px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 5px 9px 3px; }
+.blk .bb { padding: 0 0 6px; font: 12px/1.45 var(--mono); }
+.blk .bl { display: block; padding: 0 9px; white-space: pre-wrap; color: var(--text); }
+.blk .bl.more, .blk .bl.none { color: var(--dim); }
+.blk .bl.hl { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); }
+.blk.hl { border-color: var(--hl-edge); box-shadow: 0 0 0 1px var(--hl-edge); }
+.blk.sys .bh { color: var(--ctx); }
+.blk.file .bh { color: var(--muted); }
+.blk.user .bh { color: var(--text); }
+.blk.tool .bh, .blk.res .bh { color: var(--ok); }
+.blk.say .bh { color: var(--claude); }
+.blk.mem .bh { color: var(--mem); }
+.blk.folded .bb { display: none; }
+.blk.fresh { animation: appear .35s ease both; }
+
+/* the memory folder: the index on top, the memory file being looked at under it */
+#disk { display: grid; grid-template-rows: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 12px; min-height: 0; }
+#index, #view { display: flex; flex-direction: column; overflow: hidden; }
+#view:empty::before { content: "No memory file open."; color: var(--dim); margin: auto; font-size: 13px; }
+.vh { display: flex; align-items: baseline; gap: 10px; padding: 9px 12px; border-bottom: 1px solid var(--line); font-size: 13px; min-height: 40px; white-space: nowrap; }
+.vh .kind { color: var(--mem); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+.vh .where { font: 12px var(--mono); color: var(--text); }
+.vh .tag { font: 11px var(--sans); color: var(--q); margin-left: auto; }
+#index .folder { font: 11px var(--mono); color: var(--muted); padding: 6px 12px 0; white-space: nowrap; }
+.vbody { flex: 1; min-height: 0; overflow: auto; margin: 0; }
+.code { padding: 8px 0; font: 12px/1.5 var(--mono); }
+.code .line { display: block; padding: 0 12px; white-space: pre-wrap; }
+.code .line.more, .code .line.none { color: var(--dim); }
+.code .line .mk { display: inline-block; width: 1.4ch; margin-left: -0.2ch; color: var(--dim); user-select: none; }
+.vbody .hl { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); }
+.code .line.add { background: #7ee0a114; }
+.code .line.add .mk { color: var(--ok); }
+.code .line.del { background: #ff8a8a14; color: var(--muted); }
+.code .line.del .mk { color: #ff8a8a; }
+
+/* the clear space above the conversation, where a note can sit */
+#term > .gap { flex: 1 1 0; min-height: 0; }
+/* something the agent says to itself on the way */
+.ln.aside { font-style: italic; color: var(--muted); }
+.ln.aside::before { content: "⏺ "; font-style: normal; }
+
+/* the context as plain text: one transcript, a role line where the speaker changes */
+#ctxbody.plain { gap: 0; padding: 10px 0; font: 12px/1.5 var(--mono); }
+#ctxbody.plain .pb { flex-shrink: 0; }
+#ctxbody.plain .pl { display: block; padding: 0 14px; white-space: pre-wrap; color: var(--text); }
+#ctxbody.plain .pl.role { color: var(--dim); margin-top: 8px; }
+#ctxbody.plain .pb:first-child .pl.role:first-child { margin-top: 0; }
+#ctxbody.plain .pl.role::before { content: "["; } #ctxbody.plain .pl.role::after { content: "]"; }
+#ctxbody.plain .pl.none { color: var(--dim); }
+#ctxbody.plain .pl.more { color: var(--dim); opacity: .7; font-size: 11px; }
+#ctxbody.plain .pl.hl { background: var(--hl); box-shadow: inset 2px 0 0 var(--hl-edge); }
+#ctxbody.plain .pb.folded .pl:not(.role):not(:last-child) { display: none; }
+#ctxbody.plain .pb.folded .pl:not(.role):last-child:not(.more) { display: none; }
+.pb.fresh { animation: appear .35s ease both; }
+#ctxbody.plain .pb + .pb { margin-top: 6px; }
+#ctxbody.plain .pb.folded + .pb.folded { margin-top: 0; }
+/* a run of folded blocks shows only its first block's role line and one "(about N lines omitted)" */
+#ctxbody.plain .pb.folded[data-omit=""] { display: none; }
+#ctxbody.plain { font-size: 11.5px; }
